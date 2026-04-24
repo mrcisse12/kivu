@@ -1,0 +1,29 @@
+{
+  "name": "KIVU — Plateforme mondiale de langues",
+  "short_name": "KIVU",
+  "description": "Traduction, apprentissage et préservation pour 2000+ langues africaines. Offline-first.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#174E9C",
+  "background_color": "#0B2447",
+  "categories": ["education", "productivity", "social", "utilities"],
+  "lang": "fr",
+  "dir": "ltr",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Traduire", "short_name": "Traduire", "url": "/#/translate", "icons": [{ "src": "/favicon.svg", "sizes": "any" }] },
+    { "name": "Apprendre", "short_name": "Apprendre", "url": "/#/learn", "icons": [{ "src": "/favicon.svg", "sizes": "any" }] },
+    { "name": "Préserver", "short_name": "Préserver", "url": "/#/preserve", "icons": [{ "src": "/favicon.svg", "sizes": "any" }] }
+  ],
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
+  "screenshots": [
+    { "src": "/icons/screenshot-mobile.png", "sizes": "540x720", "type": "image/png", "form_factor": "narrow" }
+  ]
+}

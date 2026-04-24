@@ -1,0 +1,65 @@
+# KIVU — Déploiement Render (backend gratuit)
+# Deux services : Node.js (Express) et Python (Flask).
+# Choisis celui que tu préfères — ou déploie les deux.
+
+services:
+  # --------- Backend Node.js (Express + Socket.IO) ---------
+  - type: web
+    name: kivu-backend-node
+    env: node
+    plan: free
+    region: frankfurt
+    rootDir: Backend
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGO_URI
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        value: https://kivu.vercel.app
+
+  # --------- Backend Python (Flask + SQLAlchemy) ---------
+  - type: web
+    name: kivu-backend-python
+    env: python
+    plan: free
+    region: frankfurt
+    rootDir: Backend-Python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    autoDeploy: true
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: PORT
+        value: 10000
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://kivu.vercel.app,http://localhost:5173
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+
+# Bases de données (optionnel — SQLite fonctionne en local mais non persistant sur Render free)
+databases:
+  - name: kivu-postgres
+    plan: free
+    databaseName: kivu
+    region: frankfurt

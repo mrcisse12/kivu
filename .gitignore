@@ -1,0 +1,86 @@
+# ----- OS -----
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ----- IDE -----
+.vscode/
+.idea/
+*.swp
+*.swo
+.claude/launch.json
+
+# ----- Node.js -----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json.bak
+
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+ENV/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# ----- Env secrets -----
+.env
+.env.local
+.env.*.local
+.env.production
+
+# ----- Build artifacts -----
+dist/
+build/
+*.log
+.next/
+.nuxt/
+.parcel-cache/
+.vercel/
+.render/
+
+# ----- iOS (Xcode) -----
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+Pods/
+Carthage/Build/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+
+# ----- Android -----
+*.iml
+.gradle/
+local.properties
+.cxx/
+captures/
+.externalNativeBuild
+app/build/
+android/app/build/
+
+# ----- Uploads / Media -----
+uploads/
+tmp/
+temp/
+
+# ----- Kivu specific -----
+kivu.db
+Backend-Python/kivu.db

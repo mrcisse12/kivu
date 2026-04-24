@@ -1,0 +1,18 @@
+{
+  "name": "kivu-frontend",
+  "version": "1.0.0",
+  "description": "KIVU — SPA Vanilla JS (mobile-first, PWA, Chart.js)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.2"
+  },
+  "devDependencies": {
+    "vite": "^5.2.0",
+    "vite-plugin-pwa": "^0.19.8"
+  }
+}

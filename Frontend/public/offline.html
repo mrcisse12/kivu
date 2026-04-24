@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>KIVU — Hors-ligne</title>
+    <style>
+      :root {
+        --kivu-primary: #174e9c;
+        --kivu-accent: #f2952d;
+        --kivu-secondary: #3395da;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background: linear-gradient(135deg, #174e9c 0%, #3395da 60%, #f2952d 100%);
+        color: white;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        text-align: center;
+      }
+      .card {
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        padding: 36px 28px;
+        max-width: 420px;
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      .orb {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #fff, rgba(255,255,255,0.6));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 44px;
+        margin: 0 auto 20px;
+        animation: pulse 2s ease-in-out infinite;
+        color: var(--kivu-primary);
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
+        50% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(255,255,255,0); }
+      }
+      h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+      p { opacity: 0.92; line-height: 1.55; font-size: 15px; margin-bottom: 20px; }
+      ul { text-align: left; opacity: 0.9; font-size: 14px; margin-bottom: 24px; padding-left: 20px; }
+      ul li { margin: 6px 0; }
+      button {
+        background: white;
+        color: var(--kivu-primary);
+        border: none;
+        padding: 14px 28px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 15px;
+        cursor: pointer;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      }
+      button:active { transform: scale(0.97); }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="orb">🌍</div>
+      <h1>Vous êtes hors-ligne</h1>
+      <p>Pas de réseau ? Pas de problème. KIVU fonctionne là où d'autres s'arrêtent.</p>
+      <ul>
+        <li>✅ Traduction hors-ligne (10+ langues africaines)</li>
+        <li>✅ Leçons téléchargées déjà disponibles</li>
+        <li>✅ Archives culturelles en cache</li>
+        <li>🔄 Synchronisation automatique au retour</li>
+      </ul>
+      <button onclick="location.reload()">↻ Réessayer</button>
+    </div>
+  </body>
+</html>
