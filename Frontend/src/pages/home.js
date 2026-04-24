@@ -6,46 +6,56 @@ export function renderHome() {
   const greeting = computeGreeting();
   const endangered = LANGUAGES.filter(l => l.status === 'endangered' || l.status === 'critical');
 
+  const xpPct = (user.stats.xp / user.stats.nextLevelXP * 100).toFixed(0);
+
   return `
-    <div class="screen-header">
+    <div class="screen-header animate-slide-down">
       <div>
         <div class="text-sm text-muted">${greeting} ✨</div>
-        <div class="screen-title">${user.name.split(' ')[0]}</div>
+        <div class="screen-title">${user.name.split(' ')[0]} <span class="text-gradient">•</span></div>
       </div>
       <button class="icon-btn" aria-label="Notifications">
         🔔
-        <span style="position:absolute; transform:translate(12px,-12px); width:8px; height:8px; background:var(--error); border-radius:50%"></span>
+        <span style="position:absolute; transform:translate(12px,-12px); width:8px; height:8px; background:var(--error); border-radius:50%; box-shadow:0 0 0 3px var(--bg);"></span>
       </button>
     </div>
 
-    <!-- Hero XP Card -->
-    <div class="hero-card grad-hero mb-md">
-      <div class="flex items-center gap-xs mb-sm">
-        <span>🔥</span>
-        <span class="text-sm" style="opacity:0.9">Série de ${user.stats.streak} jours</span>
-      </div>
+    <!-- Hero XP Card avec orbs décoratifs animés -->
+    <div class="hero-card grad-hero mb-md animate-scale-in" style="position:relative; overflow:hidden;">
+      <span class="orb orb--accent" style="width:160px; height:160px; top:-60px; right:-40px;"></span>
+      <span class="orb orb--primary" style="width:120px; height:120px; bottom:-50px; left:-30px; animation-delay:-4s;"></span>
 
-      <div class="flex gap-lg mb-md">
-        <div>
-          <div class="text-xl font-bold">${user.stats.xp.toLocaleString('fr-FR')}</div>
-          <div class="text-xs" style="opacity:0.85">XP</div>
+      <div style="position:relative; z-index:1;">
+        <div class="flex justify-between items-center mb-sm">
+          <div class="flex items-center gap-xs">
+            <span style="font-size:18px;" class="animate-breathe">🔥</span>
+            <span class="text-sm" style="opacity:0.92; font-weight:600;">Série de ${user.stats.streak} jours</span>
+          </div>
+          <span class="badge-live" style="background:rgba(255,255,255,0.18); color:white;">Live</span>
         </div>
-        <div>
-          <div class="text-xl font-bold">${user.stats.level}</div>
-          <div class="text-xs" style="opacity:0.85">Niveau</div>
-        </div>
-        <div>
-          <div class="text-xl font-bold">${user.stats.wordsLearned}</div>
-          <div class="text-xs" style="opacity:0.85">Mots</div>
-        </div>
-      </div>
 
-      <div class="progress-bar mb-xs">
-        <div class="progress-fill" style="width: ${(user.stats.xp / user.stats.nextLevelXP * 100).toFixed(0)}%"></div>
-      </div>
-      <div class="flex justify-between text-xs" style="opacity:0.9">
-        <span>Niveau ${user.stats.level} — Maître Conversationnel</span>
-        <span>${(user.stats.xp / user.stats.nextLevelXP * 100).toFixed(0)}%</span>
+        <div class="flex gap-lg mb-md">
+          <div>
+            <div class="text-2xl font-bold" data-counter="${user.stats.xp}">${user.stats.xp.toLocaleString('fr-FR')}</div>
+            <div class="text-xs" style="opacity:0.85; letter-spacing:0.5px;">XP</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold">${user.stats.level}</div>
+            <div class="text-xs" style="opacity:0.85; letter-spacing:0.5px;">Niveau</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold" data-counter="${user.stats.wordsLearned}">${user.stats.wordsLearned}</div>
+            <div class="text-xs" style="opacity:0.85; letter-spacing:0.5px;">Mots</div>
+          </div>
+        </div>
+
+        <div class="progress-bar mb-xs" style="background:rgba(255,255,255,0.22);">
+          <div class="progress-fill" style="width: ${xpPct}%; background:linear-gradient(90deg, #FFB859, #FFFFFF);"></div>
+        </div>
+        <div class="flex justify-between text-xs" style="opacity:0.92;">
+          <span>Niveau ${user.stats.level} — Maître Conversationnel</span>
+          <span class="font-bold">${xpPct}%</span>
+        </div>
       </div>
     </div>
 
@@ -173,6 +183,27 @@ function computeGreeting() {
   if (h < 18) return 'Bon après-midi';
   return 'Bonsoir';
 }
+
+/**
+ * Appelé par le router après chaque render('/') pour animer les
+ * compteurs et autres micro-interactions — optionnel mais beau.
+ */
+renderHome.mount = function afterHomeRender() {
+  document.querySelectorAll('[data-counter]').forEach(el => {
+    const target = Number(el.dataset.counter);
+    if (!Number.isFinite(target) || target <= 0) return;
+    const duration = 900;
+    const start = performance.now();
+    function frame(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+      const value = Math.round(target * eased);
+      el.textContent = value.toLocaleString('fr-FR');
+      if (t < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  });
+};
 
 function formatSpeakers(count) {
   if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M locuteurs`;

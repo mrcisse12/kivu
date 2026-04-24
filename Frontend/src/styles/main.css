@@ -610,5 +610,253 @@ input, textarea {
    =========================================================== */
 @keyframes fadeIn { from { opacity: 0; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-16px); } }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(24px); } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.92); } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.04); opacity: 1; } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes spin360 { to { transform: rotate(360deg); } }
+@keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.7; } 100% { transform: scale(2.2); opacity: 0; } }
+@keyframes orbDrift {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(30px, -20px) scale(1.08); }
+  66%  { transform: translate(-20px, 25px) scale(0.96); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
 .animate-slide-up { animation: slideUp 0.45s var(--ease-spring); }
+.animate-slide-down { animation: slideDown 0.35s var(--ease); }
+.animate-slide-right { animation: slideInRight 0.4s var(--ease-spring); }
+.animate-scale-in { animation: scaleIn 0.35s var(--ease-spring); }
 .animate-fade-in { animation: fadeIn 0.6s var(--ease); }
+.animate-float { animation: float 4s ease-in-out infinite; }
+.animate-breathe { animation: breathe 3.5s ease-in-out infinite; }
+.animate-spin { animation: spin360 1s linear infinite; }
+
+/* Respecter les préférences d'accessibilité */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===========================================================
+   Premium polish — v2
+   Glass morphism · Mesh gradients · Micro-interactions
+   =========================================================== */
+
+/* -- Glass surfaces -- */
+.glass {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 32px rgba(20, 32, 58, 0.08);
+}
+.glass-dark {
+  background: rgba(20, 32, 58, 0.55);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+/* -- Mesh gradient background (pour sections hero) -- */
+.mesh-bg {
+  position: relative;
+  background-color: var(--kivu-primary);
+  background-image:
+    radial-gradient(at 18% 22%, rgba(242, 149, 45, 0.55) 0px, transparent 55%),
+    radial-gradient(at 82% 14%, rgba(51, 149, 218, 0.60) 0px, transparent 55%),
+    radial-gradient(at 75% 88%, rgba(140, 64, 173, 0.50) 0px, transparent 55%),
+    radial-gradient(at 12% 82%, rgba(45, 158, 115, 0.45) 0px, transparent 55%);
+  overflow: hidden;
+}
+.mesh-bg.animated {
+  background-size: 180% 180%;
+  animation: gradientShift 14s ease-in-out infinite;
+}
+
+/* -- Orbs décoratifs flottants -- */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.55;
+  pointer-events: none;
+  animation: orbDrift 12s ease-in-out infinite;
+}
+.orb--primary { background: var(--kivu-primary-light); }
+.orb--accent  { background: var(--kivu-accent); }
+.orb--green   { background: var(--kivu-secondary); }
+.orb--purple  { background: var(--kivu-tertiary); }
+
+/* -- Gradient text -- */
+.text-gradient {
+  background: var(--grad-hero);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.text-gradient-sunset {
+  background: var(--grad-sunset);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* -- Skeleton loaders -- */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.05) 25%,
+    rgba(0, 0, 0, 0.10) 50%,
+    rgba(0, 0, 0, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+  border-radius: var(--r-md);
+}
+.skeleton--text  { height: 14px; margin: 6px 0; border-radius: 7px; }
+.skeleton--line  { height: 12px; }
+.skeleton--title { height: 24px; width: 60%; }
+.skeleton--avatar { width: 48px; height: 48px; border-radius: 50%; }
+.skeleton--card { height: 120px; }
+
+/* -- Toast notifications -- */
+.toast-container {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  width: min(420px, calc(100% - 32px));
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  border-left: 4px solid var(--kivu-primary);
+  pointer-events: auto;
+  animation: slideDown 0.3s var(--ease-spring);
+  font-size: 14px;
+}
+.toast--success { border-left-color: var(--success); }
+.toast--warning { border-left-color: var(--warning); }
+.toast--error   { border-left-color: var(--error); }
+.toast--info    { border-left-color: var(--info); }
+.toast__icon { font-size: 20px; flex-shrink: 0; }
+.toast__body { flex: 1; color: var(--text-primary); }
+
+/* -- Micro-interactions ciblées -- */
+.feature-tile {
+  transition: transform 0.25s var(--ease-spring), box-shadow 0.25s var(--ease);
+  will-change: transform;
+}
+.feature-tile:hover,
+.feature-tile:focus-visible {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+.feature-tile:active { transform: translateY(-1px) scale(0.98); }
+
+.btn {
+  transition: transform 0.18s var(--ease-spring), box-shadow 0.18s var(--ease), filter 0.18s var(--ease);
+}
+.btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.btn:active { transform: translateY(0) scale(0.97); }
+
+/* -- Focus rings accessibles -- */
+a:focus-visible,
+button:focus-visible,
+.btn:focus-visible,
+.feature-tile:focus-visible,
+.form-input:focus-visible {
+  outline: 3px solid rgba(51, 149, 218, 0.55);
+  outline-offset: 2px;
+}
+
+/* -- Pulse ring (autour du mic / badges live) -- */
+.pulse-ring {
+  position: relative;
+}
+.pulse-ring::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  border: 2px solid currentColor;
+  opacity: 0.6;
+  animation: pulse-ring 1.8s cubic-bezier(0.25, 0.8, 0.25, 1) infinite;
+}
+
+/* -- Divider décoratif -- */
+.divider-fancy {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--divider), transparent);
+  margin: var(--sp-lg) 0;
+}
+
+/* -- Badge live (pour traduction temps réel, multi-parties) -- */
+.badge-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(235, 77, 77, 0.12);
+  color: var(--error);
+  border-radius: var(--r-round);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.badge-live::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--error);
+  animation: breathe 1.2s ease-in-out infinite;
+}
+
+/* -- Scroll indicator (barre de progression de scroll) -- */
+.scroll-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: var(--scroll, 0%);
+  background: var(--grad-hero);
+  z-index: 1000;
+  transition: width 0.1s linear;
+}
+
+/* -- Empty state -- */
+.empty-state {
+  text-align: center;
+  padding: var(--sp-xl) var(--sp-md);
+  color: var(--text-secondary);
+}
+.empty-state__emoji { font-size: 56px; margin-bottom: var(--sp-sm); display: block; animation: float 4s ease-in-out infinite; }
+.empty-state__title { font-weight: 700; color: var(--text-primary); margin-bottom: var(--sp-xs); }
+
+/* -- Responsive safe area pour iPhone/Android notch -- */
+.safe-top    { padding-top: max(var(--sp-md), env(safe-area-inset-top)); }
+.safe-bottom { padding-bottom: max(var(--sp-md), env(safe-area-inset-bottom)); }

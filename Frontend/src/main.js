@@ -96,5 +96,38 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// ===========================================================
+// Global premium UX: toasts + scroll indicator
+// ===========================================================
+const toastContainer = document.createElement('div');
+toastContainer.className = 'toast-container';
+document.body.appendChild(toastContainer);
+
+const TOAST_ICONS = { success: '✅', warning: '⚠️', error: '❌', info: '💬' };
+function toast(message, { type = 'info', duration = 3200 } = {}) {
+  const el = document.createElement('div');
+  el.className = `toast toast--${type}`;
+  el.innerHTML = `
+    <span class="toast__icon">${TOAST_ICONS[type] || '💬'}</span>
+    <span class="toast__body">${message}</span>
+  `;
+  toastContainer.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity 0.25s, transform 0.25s';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-8px)';
+    setTimeout(() => el.remove(), 260);
+  }, duration);
+}
+
+const scrollBar = document.createElement('div');
+scrollBar.className = 'scroll-indicator';
+document.body.appendChild(scrollBar);
+window.addEventListener('scroll', () => {
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = max > 0 ? (window.scrollY / max) * 100 : 0;
+  scrollBar.style.setProperty('--scroll', pct + '%');
+}, { passive: true });
+
 // Export for console debug
-window.__KIVU__ = { navigate, store };
+window.__KIVU__ = { navigate, store, toast };

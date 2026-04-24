@@ -13,8 +13,11 @@ export function renderTranslate() {
     <div class="screen-header">
       <div>
         <div class="screen-title">Traduction</div>
-        <div class="screen-subtitle">2000+ langues, même hors-ligne</div>
+        <div class="screen-subtitle">
+          <span class="text-gradient font-bold">2000+</span> langues, même hors-ligne
+        </div>
       </div>
+      ${isRecording ? '<span class="badge-live">Live</span>' : ''}
     </div>
 
     <!-- Mode Switcher -->
@@ -86,7 +89,7 @@ export function renderTranslate() {
     <div class="grid grid-3 mb-lg">
       <div class="chip chip-primary" style="justify-content:center; padding:12px;">📶 Hors-ligne</div>
       <div class="chip chip-success" style="justify-content:center; padding:12px;">🔒 E2E</div>
-      <div class="chip chip-accent" style="justify-content:center; padding:12px;">⚡ <200 ms</div>
+      <div class="chip chip-accent" style="justify-content:center; padding:12px;">⚡ &lt;200 ms</div>
     </div>
 
     <!-- Recent translations -->
