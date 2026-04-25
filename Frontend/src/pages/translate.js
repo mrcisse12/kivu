@@ -1,8 +1,16 @@
 import { store } from '../store.js';
-import { LANGUAGES, findLanguage } from '../data/languages.js';
+import { findLanguage } from '../data/languages.js';
+import { icons } from '../components/icons.js';
 
 let isRecording = false;
 let currentMode = 'voice';
+
+const MODES = [
+  { id: 'voice',        label: 'Vocale',    icon: icons.mic },
+  { id: 'text',         label: 'Texte',     icon: icons.chat },
+  { id: 'camera',       label: 'Caméra',    icon: icons.camera },
+  { id: 'conversation', label: 'Discussion', icon: icons.users }
+];
 
 export function renderTranslate() {
   const { sourceLanguage, targetLanguage } = store.get('translation');
@@ -14,87 +22,113 @@ export function renderTranslate() {
       <div>
         <div class="screen-title">Traduction</div>
         <div class="screen-subtitle">
-          <span class="text-gradient font-bold">2000+</span> langues, même hors-ligne
+          <span class="text-gradient font-bold">2 000+</span> langues, même hors-ligne
         </div>
       </div>
-      ${isRecording ? '<span class="badge-live">Live</span>' : ''}
+      ${isRecording ? '<span class="badge-live">En direct</span>' : ''}
     </div>
 
-    <!-- Mode Switcher -->
-    <div class="card mb-md" style="padding:4px; display:grid; grid-template-columns:repeat(4,1fr); gap:4px;">
-      ${renderMode('voice', '🎙️', 'Vocale')}
-      ${renderMode('text', '💬', 'Texte')}
-      ${renderMode('camera', '📷', 'Caméra')}
-      ${renderMode('conversation', '🗣️', 'Discussion')}
+    <!-- Mode Switcher (SVG icons) -->
+    <div class="card mb-md mode-switcher">
+      ${MODES.map(m => `
+        <button class="mode-btn ${currentMode === m.id ? 'active' : ''}"
+                data-action="mode-${m.id}" aria-label="${m.label}">
+          <span class="mode-icon" aria-hidden="true">${m.icon(20)}</span>
+          <span class="mode-label">${m.label}</span>
+        </button>
+      `).join('')}
     </div>
 
     <!-- Language Selector -->
-    <div class="flex gap-xs items-center mb-md">
+    <div class="lang-selector mb-md">
       ${renderLangPill(source, 'De', 'source')}
-      <button class="lang-swap-btn" data-action="lang-swap" aria-label="Inverser">⇄</button>
+      <button class="lang-swap-btn" data-action="lang-swap" aria-label="Inverser les langues">
+        ${icons.swap(20)}
+      </button>
       ${renderLangPill(target, 'Vers', 'target')}
     </div>
 
     <!-- Source card -->
-    <div class="card mb-md" style="border: 2px solid rgba(23,78,156,0.2);">
-      <div class="flex justify-between items-center mb-sm">
+    <div class="card translate-card translate-card--source mb-md">
+      <div class="translate-card__head">
         <div class="flex items-center gap-xs">
-          <span style="font-size:20px">${source.flag}</span>
-          <span class="text-sm text-muted">${source.name}</span>
+          <span class="lang-flag">${source.flag}</span>
+          <span class="text-sm font-semibold">${source.name}</span>
         </div>
         <div class="flex gap-xs">
-          <button class="icon-btn" style="width:36px;height:36px">🔊</button>
-          <button class="icon-btn" style="width:36px;height:36px">📋</button>
+          <button class="icon-btn icon-btn--sm" aria-label="Écouter">${icons.speaker(18)}</button>
+          <button class="icon-btn icon-btn--sm" aria-label="Copier">${icons.copy(18)}</button>
         </div>
       </div>
-      <div id="source-text" style="font-size:17px; min-height:60px; color:var(--text-tertiary);">
-        Parlez ou écrivez ici...
+      <div id="source-text" class="translate-card__body" data-empty="${!isRecording}">
+        ${isRecording ? '<span class="recording-text">Écoute en cours…</span>' : 'Parlez ou écrivez ici…'}
       </div>
     </div>
 
     <!-- Mic Button -->
     <div class="mic-container">
       ${isRecording ? '<div class="mic-ripple"></div><div class="mic-ripple r2"></div><div class="mic-ripple r3"></div>' : ''}
-      <button class="mic-btn ${isRecording ? 'recording' : ''}" data-action="mic-toggle">
-        ${isRecording ? '⏹️' : '🎙️'}
+      <button class="mic-btn ${isRecording ? 'recording' : ''}"
+              data-action="mic-toggle"
+              aria-label="${isRecording ? 'Arrêter l’enregistrement' : 'Démarrer l’enregistrement'}">
+        ${isRecording ? icons.micOff(32, 'white') : icons.mic(32, 'white')}
       </button>
     </div>
-    <div class="text-center text-sm text-muted mb-md">
-      ${isRecording ? 'Écoute en cours...' : 'Appuyez pour parler'}
+    <div class="text-center text-sm text-muted mb-md mic-hint">
+      ${isRecording ? 'Touchez pour arrêter' : 'Touchez pour parler'}
     </div>
 
     <!-- Target card -->
-    <div class="card mb-md" style="border: 2px solid rgba(242,149,45,0.25);">
-      <div class="flex justify-between items-center mb-sm">
+    <div class="card translate-card translate-card--target mb-md">
+      <div class="translate-card__head">
         <div class="flex items-center gap-xs">
-          <span style="font-size:20px">${target.flag}</span>
-          <span class="text-sm text-muted">${target.name}</span>
+          <span class="lang-flag">${target.flag}</span>
+          <span class="text-sm font-semibold">${target.name}</span>
         </div>
         <div class="flex gap-xs">
-          <button class="icon-btn" style="width:36px;height:36px">🔊</button>
-          <button class="icon-btn" style="width:36px;height:36px">📋</button>
-          <button class="icon-btn" style="width:36px;height:36px">↗️</button>
+          <button class="icon-btn icon-btn--sm" aria-label="Écouter">${icons.speaker(18)}</button>
+          <button class="icon-btn icon-btn--sm" aria-label="Copier">${icons.copy(18)}</button>
+          <button class="icon-btn icon-btn--sm" aria-label="Partager">${icons.share(18)}</button>
         </div>
       </div>
-      <div id="target-text" style="font-size:17px; min-height:60px; color:var(--text-tertiary);">
-        Appuyez sur le microphone pour commencer...
+      <div id="target-text" class="translate-card__body" data-empty="true">
+        La traduction apparaîtra ici…
       </div>
-      <div class="flex gap-xs mt-md">
-        <span class="chip chip-success">✓ 95% confiance</span>
-        <span class="chip chip-primary">📶 Hors-ligne</span>
+      <div class="flex gap-xs mt-md flex-wrap">
+        <span class="chip chip-success">Confiance 95%</span>
+        <span class="chip chip-primary">Hors-ligne</span>
+        <span class="chip chip-accent">&lt;200 ms</span>
       </div>
     </div>
 
-    <!-- Feature badges row -->
-    <div class="grid grid-3 mb-lg">
-      <div class="chip chip-primary" style="justify-content:center; padding:12px;">📶 Hors-ligne</div>
-      <div class="chip chip-success" style="justify-content:center; padding:12px;">🔒 E2E</div>
-      <div class="chip chip-accent" style="justify-content:center; padding:12px;">⚡ &lt;200 ms</div>
+    <!-- Trust badges (SVG) -->
+    <div class="grid grid-3 mb-lg trust-row">
+      <div class="trust-card">
+        <span class="trust-icon" style="color:var(--info)">${icons.wifiOff(22)}</span>
+        <div>
+          <div class="font-semibold text-sm">Hors-ligne</div>
+          <div class="text-xs text-muted">Marche sans data</div>
+        </div>
+      </div>
+      <div class="trust-card">
+        <span class="trust-icon" style="color:var(--success)">${icons.lock(22)}</span>
+        <div>
+          <div class="font-semibold text-sm">E2E Chiffré</div>
+          <div class="text-xs text-muted">Privacy first</div>
+        </div>
+      </div>
+      <div class="trust-card">
+        <span class="trust-icon" style="color:var(--kivu-accent)">${icons.zap(22)}</span>
+        <div>
+          <div class="font-semibold text-sm">Ultra rapide</div>
+          <div class="text-xs text-muted">&lt;200 ms latence</div>
+        </div>
+      </div>
     </div>
 
     <!-- Recent translations -->
     <h2 class="font-display font-bold text-lg mb-sm">Traductions récentes</h2>
-    <div class="flex flex-col gap-xs">
+    <div class="flex flex-col gap-xs mb-lg">
       ${renderHistoryItem('🇫🇷', '🇲🇱', 'Ça va mon ami ?', 'I ka kɛnɛ, n teri?', 'à l\'instant')}
       ${renderHistoryItem('🇫🇷', '🇨🇮', 'Combien coûte ce fruit ?', 'Joli foli yen ka jigi fili ?', 'il y a 5 min')}
       ${renderHistoryItem('🇫🇷', '🇹🇿', 'Bon voyage', 'Safari njema', 'hier')}
@@ -102,38 +136,26 @@ export function renderTranslate() {
   `;
 }
 
-function renderMode(id, icon, label) {
-  const active = currentMode === id;
-  return `
-    <button class="bottom-nav-item ${active ? 'active' : ''}"
-      style="padding: 10px 6px; border-radius: var(--r-md); ${active ? 'background: var(--grad-hero); color: white;' : ''}"
-      data-action="mode-${id}">
-      <span style="font-size:16px">${icon}</span>
-      <span style="font-size:10px">${label}</span>
-    </button>
-  `;
-}
-
 function renderLangPill(lang, label, target) {
   return `
-    <button class="lang-pill" data-action="pick-${target}">
-      <span class="flag">${lang.flag}</span>
-      <div style="flex:1; text-align:left;">
-        <div class="label">${label}</div>
-        <div class="name">${lang.name}</div>
+    <button class="lang-pill" data-action="pick-${target}" aria-label="Choisir la langue ${label.toLowerCase()}">
+      <span class="lang-flag">${lang.flag}</span>
+      <div class="lang-pill__body">
+        <div class="lang-pill__label">${label}</div>
+        <div class="lang-pill__name">${lang.name}</div>
       </div>
-      <span class="text-muted">▼</span>
+      <span class="lang-pill__chevron" aria-hidden="true">${icons.chevronDown(16)}</span>
     </button>
   `;
 }
 
 function renderHistoryItem(fromFlag, toFlag, source, target, time) {
   return `
-    <div class="card">
+    <div class="card history-item">
       <div class="flex items-center gap-xs mb-xs">
-        <span>${fromFlag}</span>
-        <span class="text-muted">→</span>
-        <span>${toFlag}</span>
+        <span class="lang-flag-sm">${fromFlag}</span>
+        <span class="text-tertiary">${icons.arrowRight(14)}</span>
+        <span class="lang-flag-sm">${toFlag}</span>
         <span style="margin-left:auto" class="text-xs text-muted">${time}</span>
       </div>
       <div class="text-sm text-muted">${source}</div>
@@ -143,14 +165,34 @@ function renderHistoryItem(fromFlag, toFlag, source, target, time) {
 }
 
 renderTranslate.mount = () => {
-  document.addEventListener('mic-toggle', () => {
-    isRecording = !isRecording;
-    document.querySelector('main.screen').innerHTML = renderTranslate();
-    renderTranslate.mount();
-  });
+  const main = document.querySelector('main.screen');
+  if (!main) return;
 
-  document.addEventListener('lang-swap', () => {
-    const { sourceLanguage, targetLanguage } = store.get('translation');
-    store.update('translation', t => ({ ...t, sourceLanguage: targetLanguage, targetLanguage: sourceLanguage }));
+  const rerender = () => {
+    main.innerHTML = renderTranslate();
+    renderTranslate.mount();
+  };
+
+  document.querySelectorAll('[data-action="mic-toggle"]').forEach(el =>
+    el.addEventListener('click', () => {
+      isRecording = !isRecording;
+      rerender();
+      if (isRecording && window.__KIVU__?.toast) {
+        window.__KIVU__.toast('Écoute activée — parlez maintenant', { type: 'info', duration: 1800 });
+      }
+    })
+  );
+
+  document.querySelectorAll('[data-action="lang-swap"]').forEach(el =>
+    el.addEventListener('click', () => {
+      const { sourceLanguage, targetLanguage } = store.get('translation');
+      store.update('translation', t => ({ ...t, sourceLanguage: targetLanguage, targetLanguage: sourceLanguage }));
+    })
+  );
+
+  MODES.forEach(m => {
+    document.querySelectorAll(`[data-action="mode-${m.id}"]`).forEach(el =>
+      el.addEventListener('click', () => { currentMode = m.id; rerender(); })
+    );
   });
 };

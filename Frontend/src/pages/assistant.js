@@ -1,46 +1,73 @@
+import { icons } from '../components/icons.js';
+
 let messages = [
-  { from: 'ai', content: 'Bonjour Amadou ! Prêt pour ta leçon du jour ? Aujourd\'hui on va apprendre à marchander en Haussa.' },
+  { from: 'ai',   content: 'Bonjour Amadou ! Prêt pour ta leçon du jour ? Aujourd\'hui on apprend à marchander en Haussa.' },
   { from: 'user', content: 'Oui, je vais au marché plus tard' },
-  { from: 'ai', content: 'Parfait ! Commençons par le vocabulaire essentiel. En Haussa, "combien ça coûte ?" se dit "Nawa ne?". Essayez de répéter.' }
+  { from: 'ai',   content: 'Parfait ! Commençons par le vocabulaire essentiel. En Haussa, "combien ça coûte ?" se dit "Nawa ne?". Essayez de répéter.' }
+];
+
+const SUGGESTIONS = [
+  'Leçon du jour',
+  'Parler au marché',
+  'Politesse',
+  'Chiffres'
+];
+
+const CONTEXT_CHIPS = [
+  { emoji: '📍', label: 'Marché proche', color: 'accent' },
+  { emoji: '📖', label: 'Haussa niv. 3', color: 'primary' },
+  { emoji: '🔥', label: '12 j de série',  color: 'error' }
 ];
 
 export function renderAssistant() {
   return `
     <div class="screen-header">
       <div class="flex items-center gap-sm">
-        <span style="width:56px;height:56px;border-radius:50%;background:rgba(230,90,140,0.15);color:var(--color-assistant);display:flex;align-items:center;justify-content:center;font-size:24px">✨</span>
+        <span class="screen-icon" style="background:rgba(230,90,140,0.15); color:var(--color-assistant);">
+          ${icons.assistant(28)}
+        </span>
         <div>
-          <div class="screen-title">Assistant</div>
-          <div class="screen-subtitle">Ton tuteur IA qui t'apprend en vivant</div>
+          <div class="screen-title">Assistant IA</div>
+          <div class="screen-subtitle">Ton tuteur personnel qui t'apprend en vivant</div>
         </div>
       </div>
     </div>
 
     <!-- Context bar -->
     <div class="flex gap-xs mb-md scroll-x">
-      <span class="chip chip-accent">📍 Marché proche</span>
-      <span class="chip chip-primary">📖 Haussa niv.3</span>
-      <span class="chip chip-error">🔥 12j série</span>
+      <div class="scroll-x-row">
+        ${CONTEXT_CHIPS.map(c => `
+          <span class="chip chip-${c.color}">${c.emoji} ${c.label}</span>
+        `).join('')}
+      </div>
     </div>
 
     <!-- Messages -->
-    <div class="flex flex-col gap-sm mb-md" style="min-height:50vh">
+    <div class="chat-stream mb-md" id="chat-stream">
       ${messages.map(m => renderBubble(m)).join('')}
     </div>
 
     <!-- Suggestions -->
-    <div class="flex gap-xs mb-md scroll-x">
-      <button class="chip" style="background:rgba(230,90,140,0.15); color:var(--color-assistant); padding:10px 16px">Leçon du jour</button>
-      <button class="chip" style="background:rgba(230,90,140,0.15); color:var(--color-assistant); padding:10px 16px">Parler au marché</button>
-      <button class="chip" style="background:rgba(230,90,140,0.15); color:var(--color-assistant); padding:10px 16px">Politesse</button>
-      <button class="chip" style="background:rgba(230,90,140,0.15); color:var(--color-assistant); padding:10px 16px">Chiffres</button>
+    <div class="scroll-x mb-md">
+      <div class="scroll-x-row">
+        ${SUGGESTIONS.map(s => `
+          <button class="chip chip-suggestion" data-action="suggest" data-text="${s}">${s}</button>
+        `).join('')}
+      </div>
     </div>
 
     <!-- Input -->
-    <div class="flex gap-xs items-center" style="position:sticky;bottom:100px">
-      <button class="icon-btn" style="background:rgba(230,90,140,0.15);color:var(--color-assistant)">🎙️</button>
-      <input id="assistant-input" class="form-input" style="flex:1;border-radius:999px;box-shadow:var(--shadow-sm);border:none" placeholder="Écris à ton tuteur..." />
-      <button class="icon-btn" style="background:var(--color-assistant);color:white" data-action="send-message">➤</button>
+    <div class="chat-input">
+      <button class="icon-btn icon-btn--mic" aria-label="Dictée vocale">
+        ${icons.mic(20, 'currentColor')}
+      </button>
+      <input id="assistant-input"
+             class="form-input chat-input__field"
+             placeholder="Écris à ton tuteur…"
+             aria-label="Message"/>
+      <button class="icon-btn icon-btn--send" data-action="send-message" aria-label="Envoyer">
+        ${icons.send(20, 'white')}
+      </button>
     </div>
   `;
 }
@@ -48,34 +75,70 @@ export function renderAssistant() {
 function renderBubble(m) {
   if (m.from === 'ai') {
     return `
-      <div class="flex gap-xs" style="align-items:flex-start">
-        <span style="width:34px;height:34px;border-radius:50%;background:rgba(230,90,140,0.15);color:var(--color-assistant);display:flex;align-items:center;justify-content:center">✨</span>
-        <div class="card" style="max-width:80%;border-radius:var(--r-lg) var(--r-lg) var(--r-lg) 4px;padding:14px">${m.content}</div>
+      <div class="bubble-row bubble-row--ai">
+        <span class="bubble-avatar bubble-avatar--ai" aria-hidden="true">${icons.assistant(18, 'white')}</span>
+        <div class="bubble bubble--ai">${m.content}</div>
       </div>
     `;
   }
   return `
-    <div class="flex gap-xs" style="align-items:flex-start;flex-direction:row-reverse">
-      <span style="font-size:28px">🧑🏾</span>
-      <div style="max-width:80%;padding:14px;background:var(--grad-hero);color:white;border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);box-shadow:var(--shadow-sm)">${m.content}</div>
+    <div class="bubble-row bubble-row--user">
+      <div class="bubble bubble--user">${m.content}</div>
+      <span class="bubble-avatar bubble-avatar--user" aria-hidden="true">🧑🏾</span>
     </div>
   `;
 }
 
 renderAssistant.mount = () => {
-  document.addEventListener('send-message', () => {
-    const input = document.getElementById('assistant-input');
-    const text = input.value.trim();
-    if (!text) return;
-    messages.push({ from: 'user', content: text });
-    input.value = '';
-    document.querySelector('main.screen').innerHTML = renderAssistant();
-    renderAssistant.mount();
+  const main = document.querySelector('main.screen');
+  if (!main) return;
+
+  const input = document.getElementById('assistant-input');
+
+  function send(text) {
+    if (!text || !text.trim()) return;
+    messages.push({ from: 'user', content: text.trim() });
+    rerender(true);
 
     setTimeout(() => {
-      messages.push({ from: 'ai', content: 'Excellent ! Essayons maintenant : "Yaya ne mangoro?" (Combien coûte la mangue ?)' });
-      document.querySelector('main.screen').innerHTML = renderAssistant();
-      renderAssistant.mount();
-    }, 1000);
-  }, { once: true });
+      messages.push({
+        from: 'ai',
+        content: 'Excellent ! Essayons : "Yaya ne mangoro?" (Combien coûte la mangue ?)'
+      });
+      rerender(true);
+    }, 900);
+  }
+
+  function rerender(scroll) {
+    main.innerHTML = renderAssistant();
+    renderAssistant.mount();
+    if (scroll) {
+      const stream = document.getElementById('chat-stream');
+      if (stream) stream.scrollTop = stream.scrollHeight;
+    }
+  }
+
+  document.querySelectorAll('[data-action="send-message"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const text = document.getElementById('assistant-input')?.value;
+      send(text);
+    })
+  );
+
+  if (input) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        send(input.value);
+      }
+    });
+  }
+
+  document.querySelectorAll('[data-action="suggest"]').forEach(btn =>
+    btn.addEventListener('click', () => send(btn.dataset.text))
+  );
+
+  // auto-scroll on first paint
+  const stream = document.getElementById('chat-stream');
+  if (stream) stream.scrollTop = stream.scrollHeight;
 };

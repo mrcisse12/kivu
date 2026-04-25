@@ -1,8 +1,32 @@
+import { icons } from '../components/icons.js';
+
+const PARTICIPANTS = [
+  { avatar: '👨🏾‍💼', flag: '🇨🇮', lang: 'Dioula' },
+  { avatar: '👩🏾‍💼', flag: '🇸🇳', lang: 'Wolof' },
+  { avatar: '🧑🏾‍💼', flag: '🇰🇪', lang: 'Swahili' },
+  { avatar: '👨🏿‍💼', flag: '🇳🇬', lang: 'Yoruba' }
+];
+
+const UPCOMING = [
+  { time: '14:00',         title: 'Conseil d’administration', count: 6, flags: ['🇨🇮','🇸🇳','🇰🇪'] },
+  { time: '16:30',         title: 'Négociation fournisseur',  count: 3, flags: ['🇲🇱','🇳🇪'] },
+  { time: 'Demain 09:00',  title: 'Consultation médicale',    count: 2, flags: ['🇧🇫','🇫🇷'] }
+];
+
+const TEMPLATES = [
+  { emoji: '💼', title: 'Réunion business',         color: 'var(--kivu-secondary)' },
+  { emoji: '🏥', title: 'Consultation médicale',     color: 'var(--error)' },
+  { emoji: '🌐', title: 'Négociation diplomatique',  color: 'var(--kivu-primary)' },
+  { emoji: '🎓', title: 'Cours académique',          color: 'var(--kivu-accent)' }
+];
+
 export function renderMultiParty() {
   return `
     <div class="screen-header">
       <div class="flex items-center gap-sm">
-        <span style="width:56px;height:56px;border-radius:50%;background:rgba(89,128,235,0.15);color:var(--color-multiparty);display:flex;align-items:center;justify-content:center;font-size:24px">👥</span>
+        <span class="screen-icon" style="background:rgba(89,128,235,0.15); color:var(--color-multiparty);">
+          ${icons.multiparty(28)}
+        </span>
         <div>
           <div class="screen-title">Multi-Party</div>
           <div class="screen-subtitle">Réunions en toutes les langues, simultanément</div>
@@ -11,86 +35,67 @@ export function renderMultiParty() {
     </div>
 
     <div class="grid grid-2 mb-md">
-      <button class="btn" style="background:var(--color-multiparty);color:white;padding:20px 12px;flex-direction:column;">
-        <span style="font-size:22px">🎥</span>
-        <span>Nouvelle réunion</span>
+      <button class="btn btn-cta" style="background:var(--color-multiparty); color:white;">
+        <span class="btn-cta__icon">${icons.camera(20, 'white')}</span>
+        Nouvelle réunion
       </button>
-      <button class="btn" style="background:rgba(89,128,235,0.15);color:var(--color-multiparty);padding:20px 12px;flex-direction:column;">
-        <span style="font-size:22px">🔗</span>
-        <span>Rejoindre</span>
+      <button class="btn btn-cta btn-cta--ghost" style="background:rgba(89,128,235,0.12); color:var(--color-multiparty);">
+        <span class="btn-cta__icon">${icons.share(20)}</span>
+        Rejoindre
       </button>
     </div>
 
     <!-- Active meeting -->
-    <div class="card mb-md" style="border:2px solid rgba(51,179,102,0.3)">
+    <div class="card mb-md meeting-card meeting-card--live">
       <div class="flex items-center gap-xs mb-sm">
-        <span style="width:10px;height:10px;border-radius:50%;background:var(--success)"></span>
-        <span class="text-xs font-bold" style="color:var(--success)">EN COURS</span>
+        <span class="badge-live">En cours</span>
         <span class="text-xs text-muted" style="margin-left:auto">04:23</span>
       </div>
-      <div class="font-bold text-md mb-sm">Fusion Amani × Kivu</div>
-      <div class="flex items-center gap-xs mb-sm">
-        ${renderParticipant('👨🏾‍💼','🇨🇮')}
-        ${renderParticipant('👩🏾‍💼','🇸🇳')}
-        ${renderParticipant('🧑🏾‍💼','🇰🇪')}
-        ${renderParticipant('👨🏿‍💼','🇳🇬')}
-        <span style="width:36px;height:36px;border-radius:50%;background:var(--text-secondary);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;margin-left:-12px">+3</span>
-        <button class="btn" style="margin-left:auto;background:var(--color-multiparty);color:white;padding:8px 16px;font-size:13px">Rejoindre</button>
+      <div class="font-bold text-md mb-sm">Fusion Amani × KIVU</div>
+
+      <div class="participants-stack mb-sm">
+        ${PARTICIPANTS.map(p => `
+          <span class="participant" title="${p.lang}">
+            <span class="participant__avatar">${p.avatar}</span>
+            <span class="participant__flag">${p.flag}</span>
+          </span>
+        `).join('')}
+        <span class="participant participant--more">+3</span>
+        <button class="btn btn-primary btn-sm" style="margin-left:auto; background:var(--color-multiparty);">Rejoindre</button>
       </div>
-      <div class="flex items-center gap-xs">
-        <span>🇨🇮</span><span>🇸🇳</span><span>🇰🇪</span><span>🇳🇬</span><span>🇬🇭</span><span>🇲🇱</span>
-        <span class="text-xs text-primary" style="margin-left:auto">🌍 7 langues simultanées</span>
+
+      <div class="flex items-center gap-xs flex-wrap">
+        ${PARTICIPANTS.map(p => `<span class="lang-flag-sm">${p.flag}</span>`).join('')}
+        <span class="lang-flag-sm">🇬🇭</span>
+        <span class="lang-flag-sm">🇲🇱</span>
+        <span class="text-xs" style="color:var(--color-multiparty); margin-left:auto;">7 langues simultanées</span>
       </div>
     </div>
 
-    <!-- Upcoming -->
     <h2 class="font-display font-bold text-lg mb-sm">Prochaines réunions</h2>
     <div class="flex flex-col gap-xs mb-lg">
-      ${renderMeeting('14:00', 'Conseil d\'administration', 6, ['🇨🇮','🇸🇳','🇰🇪'])}
-      ${renderMeeting('16:30', 'Négociation fournisseur', 3, ['🇲🇱','🇳🇪'])}
-      ${renderMeeting('Demain 09:00', 'Consultation médicale', 2, ['🇧🇫','🇫🇷'])}
+      ${UPCOMING.map(m => `
+        <div class="list-row meeting-row">
+          <div class="meeting-time">${m.time}</div>
+          <div style="flex:1; min-width:0;">
+            <div class="font-semibold">${m.title}</div>
+            <div class="text-xs text-muted">${m.flags.join(' ')} · ${m.count} participants</div>
+          </div>
+          <span class="text-tertiary">${icons.chevronRight(18)}</span>
+        </div>
+      `).join('')}
     </div>
 
-    <!-- Templates -->
     <h2 class="font-display font-bold text-lg mb-sm">Modèles rapides</h2>
-    <div class="scroll-x">
+    <div class="scroll-x mb-lg">
       <div class="scroll-x-row">
-        ${renderTemplate('💼','Réunion business','var(--kivu-secondary)')}
-        ${renderTemplate('🏥','Consultation médicale','var(--error)')}
-        ${renderTemplate('🌐','Négociation diplomatique','var(--kivu-primary)')}
-        ${renderTemplate('🎓','Cours académique','var(--kivu-accent)')}
+        ${TEMPLATES.map(t => `
+          <button class="card template-card" aria-label="${t.title}">
+            <span class="template-emoji" style="color:${t.color};">${t.emoji}</span>
+            <div class="font-semibold text-sm">${t.title}</div>
+          </button>
+        `).join('')}
       </div>
     </div>
-  `;
-}
-
-function renderParticipant(emoji, flag) {
-  return `
-    <span style="position:relative;margin-left:-12px;">
-      <span style="width:36px;height:36px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid white">${emoji}</span>
-      <span style="position:absolute;bottom:-4px;right:-4px;font-size:14px">${flag}</span>
-    </span>
-  `;
-}
-
-function renderMeeting(time, title, participants, flags) {
-  return `
-    <div class="list-row">
-      <div style="width:70px;padding:8px;background:rgba(89,128,235,0.15);color:var(--color-multiparty);border-radius:var(--r-md);text-align:center;font-weight:600;font-size:12px">${time}</div>
-      <div style="flex:1">
-        <div class="font-semibold">${title}</div>
-        <div class="text-xs text-muted">${flags.join(' ')} · ${participants} participants</div>
-      </div>
-      <span class="text-muted">›</span>
-    </div>
-  `;
-}
-
-function renderTemplate(icon, title, color) {
-  return `
-    <button class="card" style="min-width:150px;text-align:left;">
-      <div style="font-size:24px;color:${color};margin-bottom:8px">${icon}</div>
-      <div class="font-semibold text-sm">${title}</div>
-    </button>
   `;
 }

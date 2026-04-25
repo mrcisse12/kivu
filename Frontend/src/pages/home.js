@@ -1,22 +1,36 @@
 import { store } from '../store.js';
 import { LANGUAGES } from '../data/languages.js';
+import { icons } from '../components/icons.js';
+
+// Tuiles fonctionnalités — emojis catégorie autorisés (gamification visuelle)
+// MAIS l'icône principale dans la nav reste SVG pour le côté premium.
+const FEATURES = [
+  { path: '/translate',     emoji: '🗣️', color: 'var(--color-translation)',  title: 'Traduction',    desc: 'Voix temps réel' },
+  { path: '/learn',         emoji: '🎓', color: 'var(--color-learning)',     title: 'Apprentissage', desc: 'Quêtes gamifiées' },
+  { path: '/preserve',      emoji: '🛡️', color: 'var(--color-preservation)', title: 'Préservation',  desc: 'Archive éternelle' },
+  { path: '/business',      emoji: '💼', color: 'var(--color-business)',     title: 'Business',      desc: 'Commerce multilingue' },
+  { path: '/multi-party',   emoji: '🤝', color: 'var(--color-multiparty)',   title: 'Multi-Party',   desc: 'Réunions multilangues' },
+  { path: '/assistant',     emoji: '✨', color: 'var(--color-assistant)',    title: 'AI Tutor',      desc: 'Assistant personnel' },
+  { path: '/diaspora',      emoji: '💙', color: 'var(--color-diaspora)',     title: 'Diaspora',      desc: 'Familles connectées' },
+  { path: '/accessibility', emoji: '♿', color: 'var(--color-accessibility)', title: 'Accessibilité', desc: 'Pour tous, partout' }
+];
 
 export function renderHome() {
   const user = store.get('user');
   const greeting = computeGreeting();
   const endangered = LANGUAGES.filter(l => l.status === 'endangered' || l.status === 'critical');
-
   const xpPct = (user.stats.xp / user.stats.nextLevelXP * 100).toFixed(0);
+  const firstName = user.name.split(' ')[0];
 
   return `
     <div class="screen-header animate-slide-down">
       <div>
-        <div class="text-sm text-muted">${greeting} ✨</div>
-        <div class="screen-title">${user.name.split(' ')[0]} <span class="text-gradient">•</span></div>
+        <div class="text-sm text-muted">${greeting}</div>
+        <div class="screen-title">${firstName}</div>
       </div>
-      <button class="icon-btn" aria-label="Notifications">
-        🔔
-        <span style="position:absolute; transform:translate(12px,-12px); width:8px; height:8px; background:var(--error); border-radius:50%; box-shadow:0 0 0 3px var(--bg);"></span>
+      <button class="icon-btn icon-btn--bell" aria-label="Notifications">
+        ${icons.bell(22)}
+        <span class="notification-dot" aria-hidden="true"></span>
       </button>
     </div>
 
@@ -28,24 +42,24 @@ export function renderHome() {
       <div style="position:relative; z-index:1;">
         <div class="flex justify-between items-center mb-sm">
           <div class="flex items-center gap-xs">
-            <span style="font-size:18px;" class="animate-breathe">🔥</span>
+            <span style="font-size:18px;" class="animate-breathe" aria-hidden="true">🔥</span>
             <span class="text-sm" style="opacity:0.92; font-weight:600;">Série de ${user.stats.streak} jours</span>
           </div>
-          <span class="badge-live" style="background:rgba(255,255,255,0.18); color:white;">Live</span>
+          <span class="badge-live" style="background:rgba(255,255,255,0.18); color:white;">En direct</span>
         </div>
 
         <div class="flex gap-lg mb-md">
           <div>
             <div class="text-2xl font-bold" data-counter="${user.stats.xp}">${user.stats.xp.toLocaleString('fr-FR')}</div>
-            <div class="text-xs" style="opacity:0.85; letter-spacing:0.5px;">XP</div>
+            <div class="text-xs hero-stat-label">XP</div>
           </div>
           <div>
             <div class="text-2xl font-bold">${user.stats.level}</div>
-            <div class="text-xs" style="opacity:0.85; letter-spacing:0.5px;">Niveau</div>
+            <div class="text-xs hero-stat-label">Niveau</div>
           </div>
           <div>
             <div class="text-2xl font-bold" data-counter="${user.stats.wordsLearned}">${user.stats.wordsLearned}</div>
-            <div class="text-xs" style="opacity:0.85; letter-spacing:0.5px;">Mots</div>
+            <div class="text-xs hero-stat-label">Mots</div>
           </div>
         </div>
 
@@ -59,105 +73,111 @@ export function renderHome() {
       </div>
     </div>
 
-    <!-- Featured action -->
-    <button class="card mb-md" style="display:flex; width:100%; text-align:left; gap:12px; align-items:center;" data-nav="/translate">
-      <span style="
-        width:60px;height:60px;border-radius:50%;
-        background:var(--grad-sunset); color:white;
-        display:flex; align-items:center; justify-content:center; font-size:26px;
-      ">🎙️</span>
-      <div style="flex:1">
-        <div class="font-bold text-md">Traduction Vocale</div>
+    <!-- Action principale -->
+    <button class="card featured-action mb-md" data-nav="/translate">
+      <span class="featured-action__icon">${icons.mic(28, 'white')}</span>
+      <div class="featured-action__body">
+        <div class="font-bold text-md">Démarrer une traduction</div>
         <div class="text-xs text-muted">Parlez, écoutez, comprenez — instantané</div>
       </div>
-      <span class="text-muted">›</span>
+      <span class="featured-action__arrow">${icons.chevronRight(20)}</span>
     </button>
 
-    <!-- Features Grid -->
-    <h2 class="font-display font-bold text-lg mb-sm mt-lg">Nos 8 Révolutions</h2>
+    <!-- Grille des 8 fonctionnalités -->
+    <div class="section-head mb-sm mt-lg">
+      <h2 class="font-display font-bold text-lg">Nos 8 révolutions</h2>
+      <span class="text-xs text-muted">Tout, en une seule app</span>
+    </div>
     <div class="grid grid-2 mb-lg">
-      ${renderFeatureTile('/translate', '🎙️', 'var(--color-translation)', 'Traduction', 'Voix temps réel')}
-      ${renderFeatureTile('/learn', '🎓', 'var(--color-learning)', 'Apprentissage', 'Quêtes gamifiées')}
-      ${renderFeatureTile('/preserve', '🛡️', 'var(--color-preservation)', 'Préservation', 'Archive éternelle')}
-      ${renderFeatureTile('/business', '💼', 'var(--color-business)', 'Business', 'Commerce multilingue')}
-      ${renderFeatureTile('/multi-party', '👥', 'var(--color-multiparty)', 'Multi-Party', 'Réunions multilangues')}
-      ${renderFeatureTile('/assistant', '✨', 'var(--color-assistant)', 'AI Tutor', 'Assistant personnel')}
-      ${renderFeatureTile('/diaspora', '💙', 'var(--color-diaspora)', 'Diaspora', 'Familles connectées')}
-      ${renderFeatureTile('/accessibility', '♿', 'var(--color-accessibility)', 'Accessibilité', 'Pour tous, partout')}
+      ${FEATURES.map(f => renderFeatureTile(f)).join('')}
     </div>
 
-    <!-- Impact Stats -->
-    <h2 class="font-display font-bold text-lg mb-sm">Impact KIVU en temps réel</h2>
+    <!-- Impact en temps réel -->
+    <div class="section-head mb-sm">
+      <h2 class="font-display font-bold text-lg">Impact KIVU</h2>
+      <span class="badge-live">En direct</span>
+    </div>
     <div class="grid grid-3 mb-lg">
-      ${renderImpact('2 047', 'Langues actives', 'var(--kivu-primary)', '🌍')}
-      ${renderImpact('127M', 'Personnes connectées', 'var(--kivu-accent)', '👥')}
-      ${renderImpact('483', 'Langues sauvées', 'var(--kivu-tertiary)', '🛡️')}
+      ${renderImpact('2 047', 'Langues actives', 'var(--kivu-primary)', icons.globe)}
+      ${renderImpact('127M', 'Personnes',         'var(--kivu-accent)',  icons.users)}
+      ${renderImpact('483',   'Langues sauvées',  'var(--kivu-tertiary)', icons.preserve)}
     </div>
 
-    <!-- Daily Challenge -->
-    <div class="hero-card grad-sunset mb-lg">
-      <div class="flex justify-between items-center mb-sm">
-        <span class="chip chip-white">⚡ Défi du jour</span>
-        <span class="chip chip-white">+150 XP</span>
-      </div>
-      <h3 class="text-lg font-bold mb-xs">Apprenez 5 salutations en Swahili</h3>
-      <div class="flex justify-between items-center">
-        <span class="text-sm" style="opacity:0.9">3 / 5 complétées</span>
-        <button class="btn btn-white" data-nav="/learn">Continuer</button>
+    <!-- Défi du jour -->
+    <div class="hero-card grad-sunset mb-lg" style="position:relative; overflow:hidden;">
+      <span class="orb orb--accent" style="width:140px;height:140px;top:-50px;right:-30px;opacity:0.3"></span>
+      <div style="position:relative;z-index:1;">
+        <div class="flex justify-between items-center mb-sm">
+          <span class="chip chip-white">⚡ Défi du jour</span>
+          <span class="chip chip-white">+150 XP</span>
+        </div>
+        <h3 class="text-lg font-bold mb-xs">Apprenez 5 salutations en Swahili</h3>
+        <div class="flex justify-between items-center mt-sm">
+          <div>
+            <div class="progress-bar" style="background:rgba(255,255,255,0.22); max-width:160px;">
+              <div class="progress-fill" style="width:60%; background:white;"></div>
+            </div>
+            <span class="text-xs mt-xs" style="opacity:0.92">3 / 5 complétées</span>
+          </div>
+          <button class="btn btn-white" data-nav="/learn">Continuer</button>
+        </div>
       </div>
     </div>
 
-    <!-- Endangered Languages -->
-    <div class="flex justify-between items-center mb-sm">
+    <!-- Langues à sauver -->
+    <div class="section-head mb-sm">
       <div>
         <h2 class="font-display font-bold text-lg">Langues à sauver</h2>
-        <div class="text-xs text-muted">Chaque voix compte, chaque culture mérite d'exister</div>
+        <div class="text-xs text-muted">Chaque voix compte. Chaque culture mérite d'exister.</div>
       </div>
+      <button class="link-btn" data-nav="/preserve">Tout voir ${icons.chevronRight(14)}</button>
     </div>
 
     <div class="scroll-x mb-lg">
       <div class="scroll-x-row">
         ${endangered.map(lang => `
-          <div class="card" style="min-width:170px; display:flex; flex-direction:column; gap:8px;">
+          <div class="card endangered-card">
             <div class="flex justify-between items-center">
-              <span style="font-size:36px">${lang.flag}</span>
-              <span style="color:var(--error)">⚠️</span>
+              <span class="lang-flag-xl">${lang.flag}</span>
+              <span class="chip chip-error">${lang.status === 'critical' ? 'Critique' : 'Menacée'}</span>
             </div>
             <div>
               <div class="font-bold">${lang.name}</div>
               <div class="text-xs text-muted">${lang.nativeName}</div>
             </div>
-            <div class="text-xs text-muted">👤 ${formatSpeakers(lang.speakers)}</div>
-            <button class="btn btn-primary" style="padding:6px 14px; font-size:12px;" data-nav="/preserve">Contribuer</button>
+            <div class="text-xs text-muted">${formatSpeakers(lang.speakers)}</div>
+            <button class="btn btn-primary btn-sm" data-nav="/preserve">Contribuer</button>
           </div>
         `).join('')}
       </div>
     </div>
 
-    <!-- Community -->
+    <!-- Communauté -->
     <h2 class="font-display font-bold text-lg mb-sm">Communauté KIVU</h2>
-    <div class="flex flex-col gap-xs">
-      ${renderCommunityPost('👵🏾', 'Mamie Awa', 'a enregistré 12 proverbes Wolof', 'il y a 3h')}
-      ${renderCommunityPost('👨🏾‍🎓', 'Koffi', 'a terminé le niveau 15 en Dioula', 'il y a 5h')}
+    <div class="flex flex-col gap-xs mb-lg">
+      ${renderCommunityPost('👵🏾', 'Mamie Awa', 'a enregistré 12 proverbes Wolof', 'il y a 3 h')}
+      ${renderCommunityPost('👨🏾‍🎓', 'Koffi', 'a terminé le niveau 15 en Dioula', 'il y a 5 h')}
       ${renderCommunityPost('👩🏾‍⚕️', 'Dr. Amina', 'a aidé 47 patients via KIVU', 'hier')}
     </div>
   `;
 }
 
-function renderFeatureTile(path, icon, color, title, desc) {
+function renderFeatureTile(f) {
   return `
-    <button class="feature-tile" data-nav="${path}">
-      <div class="feature-icon" style="background: ${color}22; color: ${color};">${icon}</div>
-      <div class="feature-title">${title}</div>
-      <div class="feature-desc">${desc}</div>
+    <button class="feature-tile" data-nav="${f.path}" aria-label="${f.title}">
+      <div class="feature-icon" style="background: ${f.color}1a; color: ${f.color};">
+        <span aria-hidden="true">${f.emoji}</span>
+      </div>
+      <div class="feature-title">${f.title}</div>
+      <div class="feature-desc">${f.desc}</div>
     </button>
   `;
 }
 
-function renderImpact(value, label, color, icon) {
+function renderImpact(value, label, color, iconFn) {
   return `
     <div class="stat-card">
-      <div style="color:${color}; font-size:20px; margin-bottom:4px;">${icon}</div>
+      <div class="stat-icon" style="color:${color}; background:${color}14;" aria-hidden="true">${iconFn(20)}</div>
       <div class="stat-value">${value}</div>
       <div class="stat-label">${label}</div>
     </div>
@@ -167,7 +187,7 @@ function renderImpact(value, label, color, icon) {
 function renderCommunityPost(avatar, name, action, time) {
   return `
     <div class="list-row">
-      <div class="avatar">${avatar}</div>
+      <div class="avatar" aria-hidden="true">${avatar}</div>
       <div style="flex:1">
         <div class="font-semibold">${name}</div>
         <div class="text-xs text-muted">${action}</div>
@@ -184,10 +204,12 @@ function computeGreeting() {
   return 'Bonsoir';
 }
 
-/**
- * Appelé par le router après chaque render('/') pour animer les
- * compteurs et autres micro-interactions — optionnel mais beau.
- */
+function formatSpeakers(count) {
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)} M locuteurs`;
+  if (count >= 1_000) return `${Math.round(count / 1_000)} K locuteurs`;
+  return `${count} locuteurs`;
+}
+
 renderHome.mount = function afterHomeRender() {
   document.querySelectorAll('[data-counter]').forEach(el => {
     const target = Number(el.dataset.counter);
@@ -204,9 +226,3 @@ renderHome.mount = function afterHomeRender() {
     requestAnimationFrame(frame);
   });
 };
-
-function formatSpeakers(count) {
-  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M locuteurs`;
-  if (count >= 1_000) return `${Math.round(count / 1_000)}K locuteurs`;
-  return `${count} locuteurs`;
-}

@@ -1,38 +1,39 @@
 import { store } from '../store.js';
 import { navigate } from '../router.js';
+import { icons } from '../components/icons.js';
 
 const PAGES = [
   {
-    icon: '🌍',
+    emoji: '🌍',
     title: 'Bienvenue dans KIVU',
-    subtitle: 'La plateforme mondiale qui réunit 2000+ langues africaines',
+    subtitle: 'La plateforme mondiale qui réunit 2 000+ langues africaines.',
     gradient: 'grad-hero',
-    highlight: '2000+ Langues'
+    highlight: '2 000+ langues'
   },
   {
-    icon: '🎙️',
-    title: 'Traduction Vocale Instantanée',
+    emoji: '🗣️',
+    title: 'Traduction vocale instantanée',
     subtitle: 'Parlez dans votre langue maternelle. KIVU traduit en temps réel, même hors-ligne.',
     gradient: 'grad-sunset',
-    highlight: '< 200ms'
+    highlight: '< 200 ms'
   },
   {
-    icon: '🎓',
-    title: 'Apprendre en Jouant',
-    subtitle: 'Quêtes interactives, XP, badges. Apprenez une langue en 30 jours.',
+    emoji: '🎓',
+    title: 'Apprendre en jouant',
+    subtitle: 'Quêtes interactives, XP, badges. Maîtrisez une langue en 30 jours.',
     gradient: 'grad-savanna',
     highlight: '85% rétention'
   },
   {
-    icon: '🛡️',
-    title: 'Préserver Notre Héritage',
+    emoji: '🛡️',
+    title: 'Préserver notre héritage',
     subtitle: 'Immortalisez les langues menacées. La voix de votre grand-mère, pour toujours.',
     gradient: 'grad-royal',
     highlight: '500+ langues sauvées'
   },
   {
-    icon: '💙',
-    title: 'Unir l\'Humanité',
+    emoji: '💙',
+    title: 'Unir l\'humanité',
     subtitle: 'Chaque langue raconte une histoire qui mérite d\'être entendue.',
     gradient: 'grad-hero',
     highlight: '7 milliards connectés'
@@ -43,66 +44,76 @@ let currentPage = 0;
 
 export function renderOnboarding() {
   const page = PAGES[currentPage];
+  const isLast = currentPage === PAGES.length - 1;
+
   return `
-    <div class="onboarding-container ${page.gradient}" style="
-      position: fixed; inset: 0;
-      background: var(--${page.gradient === 'grad-hero' ? 'grad-hero' : page.gradient === 'grad-sunset' ? 'grad-sunset' : page.gradient === 'grad-savanna' ? 'grad-savanna' : 'grad-royal'});
-      display: flex; flex-direction: column; padding: 24px;
-      color: white;
-    ">
-      <div class="flex justify-between items-center">
-        <div></div>
-        <button class="chip chip-white" data-action="onboarding-skip">Passer</button>
-      </div>
+    <div class="onboarding-container ${page.gradient} mesh-bg animated">
+      <div class="orb orb--accent" style="width:300px;height:300px;top:-100px;right:-80px;opacity:0.35"></div>
+      <div class="orb orb--primary" style="width:240px;height:240px;bottom:-60px;left:-60px;opacity:0.3;animation-delay:-4s;"></div>
 
-      <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap: 28px;">
-        <div style="
-          width: 180px; height: 180px; border-radius: 50%;
-          background: rgba(255,255,255,0.15); backdrop-filter: blur(20px);
-          display: flex; align-items: center; justify-content: center;
-          font-size: 80px;
-          box-shadow: 0 0 80px rgba(255,255,255,0.4);
-        ">${page.icon}</div>
+      <header class="onboarding-header">
+        <div class="onboarding-brand">KIVU</div>
+        ${!isLast ? '<button class="chip chip-white" data-action="onboarding-skip">Passer</button>' : ''}
+      </header>
 
-        <span class="chip chip-white">${page.highlight}</span>
+      <main class="onboarding-body">
+        <div class="onboarding-illustration animate-scale-in" key="${currentPage}">
+          <span class="onboarding-emoji" aria-hidden="true">${page.emoji}</span>
+        </div>
 
-        <h1 style="font-size: 32px; font-weight: 800; max-width: 320px;">${page.title}</h1>
-        <p style="opacity: 0.92; max-width: 320px; line-height: 1.5;">${page.subtitle}</p>
-      </div>
+        <span class="chip chip-white animate-slide-up">${page.highlight}</span>
 
-      <div class="flex gap-xs justify-center" style="margin: 20px 0 28px;">
-        ${PAGES.map((_, i) => `
-          <span style="
-            width: ${i === currentPage ? '28px' : '8px'}; height: 8px;
-            border-radius: 999px; background: white;
-            opacity: ${i === currentPage ? 1 : 0.4};
-            transition: all 0.3s var(--ease-spring);
-          "></span>
-        `).join('')}
-      </div>
+        <h1 class="onboarding-title animate-slide-up">${page.title}</h1>
+        <p class="onboarding-subtitle animate-slide-up">${page.subtitle}</p>
+      </main>
 
-      <button class="btn btn-white btn-full" data-action="onboarding-next" style="margin-bottom: 32px;">
-        ${currentPage === PAGES.length - 1 ? '🚀 Commencer l\'aventure' : 'Continuer →'}
-      </button>
+      <footer class="onboarding-footer">
+        <div class="onboarding-dots">
+          ${PAGES.map((_, i) => `
+            <span class="onboarding-dot ${i === currentPage ? 'active' : ''}"
+                  data-action="onboarding-jump" data-index="${i}"
+                  aria-label="Étape ${i + 1}"></span>
+          `).join('')}
+        </div>
+
+        <button class="btn btn-white btn-full onboarding-cta" data-action="onboarding-next">
+          ${isLast ? 'Commencer l\'aventure' : 'Continuer'}
+          <span class="onboarding-arrow">${icons.arrowRight(18)}</span>
+        </button>
+      </footer>
     </div>
   `;
 }
 
 renderOnboarding.mount = () => {
-  document.addEventListener('onboarding-next', () => {
-    if (currentPage < PAGES.length - 1) {
-      currentPage++;
-      document.querySelector('.onboarding-container').parentElement.innerHTML =
-        `<main class="screen">${renderOnboarding()}</main>`;
-      renderOnboarding.mount();
-    } else {
+  const rerender = () => {
+    document.getElementById('app').innerHTML = `<main class="screen">${renderOnboarding()}</main>`;
+    renderOnboarding.mount();
+  };
+
+  document.querySelectorAll('[data-action="onboarding-next"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      if (currentPage < PAGES.length - 1) {
+        currentPage++;
+        rerender();
+      } else {
+        store.set('onboardingCompleted', true);
+        navigate('/');
+      }
+    })
+  );
+
+  document.querySelectorAll('[data-action="onboarding-skip"]').forEach(btn =>
+    btn.addEventListener('click', () => {
       store.set('onboardingCompleted', true);
       navigate('/');
-    }
-  }, { once: true });
+    })
+  );
 
-  document.addEventListener('onboarding-skip', () => {
-    store.set('onboardingCompleted', true);
-    navigate('/');
-  }, { once: true });
+  document.querySelectorAll('[data-action="onboarding-jump"]').forEach(dot =>
+    dot.addEventListener('click', () => {
+      currentPage = Number(dot.dataset.index) || 0;
+      rerender();
+    })
+  );
 };

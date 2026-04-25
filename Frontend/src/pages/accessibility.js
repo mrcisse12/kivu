@@ -1,11 +1,58 @@
 import { store } from '../store.js';
+import { icons } from '../components/icons.js';
+
+const GROUPS = [
+  {
+    title: 'Vision',
+    icon: icons.eye,
+    color: 'var(--kivu-primary)',
+    rows: [
+      { label: 'Contraste élevé',     icon: '◐',  key: 'highContrast' },
+      { label: 'Description audio',   icon: '🔊', key: 'audioDescription' },
+      { label: 'Taille du texte',     icon: 'Aa', key: 'fontSize', slider: true, min: 0.75, max: 2, step: 0.25, defaultValue: 1 }
+    ]
+  },
+  {
+    title: 'Audition',
+    icon: icons.ear,
+    color: 'var(--kivu-secondary)',
+    rows: [
+      { label: 'Sous-titres automatiques', icon: '📝', key: 'autoCaptions',     locked: true },
+      { label: 'Langue des signes',         icon: '🤟', key: 'signLanguage' },
+      { label: 'Transcription en direct',   icon: '💬', key: 'liveTranscript', locked: true }
+    ]
+  },
+  {
+    title: 'Mobilité',
+    icon: icons.hand,
+    color: 'var(--kivu-accent)',
+    rows: [
+      { label: 'Contrôle vocal',          icon: '🎙️', key: 'voiceControl' },
+      { label: 'Actions simplifiées',     icon: '👆', key: 'simpleActions' },
+      { label: 'Navigation à une main',   icon: '🤚', key: 'oneHandNav' }
+    ]
+  },
+  {
+    title: 'Connectivité',
+    icon: icons.signal,
+    color: 'var(--kivu-tertiary)',
+    rows: [
+      { label: 'Mode 2G/3G',           icon: '📡', key: 'low2g3g',        locked: true },
+      { label: 'Mode hors-ligne',       icon: '📵', key: 'offline',        locked: true },
+      { label: 'Économie de données',   icon: '⚡', key: 'dataSaver',      locked: true }
+    ]
+  }
+];
 
 export function renderAccessibility() {
-  const prefs = store.get('preferences');
+  const prefs = store.get('preferences') || {};
+
   return `
     <div class="screen-header">
       <div class="flex items-center gap-sm">
-        <span style="width:56px;height:56px;border-radius:50%;background:rgba(153,115,77,0.15);color:var(--color-accessibility);display:flex;align-items:center;justify-content:center;font-size:24px">♿</span>
+        <span class="screen-icon" style="background:rgba(153,115,77,0.15); color:var(--color-accessibility);">
+          ${icons.accessibility(28)}
+        </span>
         <div>
           <div class="screen-title">Accessibilité</div>
           <div class="screen-subtitle">KIVU pour tous, sans exception</div>
@@ -13,58 +60,87 @@ export function renderAccessibility() {
       </div>
     </div>
 
-    <div class="hero-card mb-md" style="background:linear-gradient(135deg,var(--color-accessibility) 0%,#C79774 100%);">
-      <span class="chip chip-white mb-sm">🌐 Inclusion universelle</span>
-      <div class="text-2xl font-bold mt-xs">KIVU = 100% accessible</div>
-      <div class="grid grid-3 mt-md">
-        <div><div class="font-bold text-lg">1,3B</div><div class="text-xs" style="opacity:0.85">Handicaps</div></div>
-        <div><div class="font-bold text-lg">540M</div><div class="text-xs" style="opacity:0.85">Malvoyants</div></div>
-        <div><div class="font-bold text-lg">430M</div><div class="text-xs" style="opacity:0.85">Sourds</div></div>
+    <div class="hero-card mb-md a11y-hero" style="position:relative; overflow:hidden;">
+      <span class="orb" style="background:#C79774; width:140px;height:140px;top:-50px;right:-30px;opacity:0.3"></span>
+      <div style="position:relative; z-index:1;">
+        <span class="chip chip-white mb-sm">Inclusion universelle</span>
+        <div class="text-2xl font-bold mt-xs">100% accessible</div>
+        <div class="grid grid-3 mt-md">
+          <div><div class="font-bold text-lg">1,3 B</div><div class="text-xs" style="opacity:0.85">Handicaps</div></div>
+          <div><div class="font-bold text-lg">540 M</div><div class="text-xs" style="opacity:0.85">Malvoyants</div></div>
+          <div><div class="font-bold text-lg">430 M</div><div class="text-xs" style="opacity:0.85">Sourds</div></div>
+        </div>
       </div>
     </div>
 
-    ${renderGroup('👁️ Vision', [
-      { label: 'Contraste élevé', icon: '◐', key: 'highContrast', value: prefs.highContrast },
-      { label: 'Description audio', icon: '🔊', key: 'audioDescription', value: false },
-      { label: 'Taille du texte', icon: 'Aa', slider: true, value: prefs.fontSize, key: 'fontSize' }
-    ])}
-
-    ${renderGroup('👂 Audition', [
-      { label: 'Sous-titres automatiques', icon: '📝', value: true, disabled: true },
-      { label: 'Langue des signes', icon: '🤟', value: false },
-      { label: 'Transcription directe', icon: '💬', value: true, disabled: true }
-    ])}
-
-    ${renderGroup('🦽 Mobilité', [
-      { label: 'Contrôle vocal', icon: '🎙️', value: true },
-      { label: 'Actions simplifiées', icon: '👆', value: false },
-      { label: 'Navigation 1 main', icon: '🤚', value: false }
-    ])}
-
-    ${renderGroup('📶 Connectivité', [
-      { label: 'Mode 2G/3G', icon: '📡', value: true, disabled: true },
-      { label: 'Mode hors-ligne', icon: '📵', value: true, disabled: true },
-      { label: 'Économie de données', icon: '⚡', value: true, disabled: true }
-    ])}
+    ${GROUPS.map(g => renderGroup(g, prefs)).join('')}
   `;
 }
 
-function renderGroup(title, rows) {
+function renderGroup(g, prefs) {
   return `
-    <div class="card mb-md">
-      <div class="font-bold text-lg mb-sm">${title}</div>
-      ${rows.map(r => `
-        <div class="flex items-center gap-sm" style="padding:10px 0;border-top:1px solid var(--divider)">
-          <span style="width:28px;color:var(--color-accessibility);text-align:center">${r.icon}</span>
-          <span style="flex:1">${r.label}</span>
-          ${r.slider
-            ? `<input type="range" min="0.75" max="2" step="0.25" value="${r.value}" style="width:120px"/>
-               <span class="text-xs text-muted">${r.value}x</span>`
-            : `<label class="toggle" style="position:relative;width:44px;height:24px;background:${r.value?'var(--color-accessibility)':'#ccc'};border-radius:999px;display:inline-block;">
-                 <span style="position:absolute;top:2px;left:${r.value?'22px':'2px'};width:20px;height:20px;background:white;border-radius:50%;transition:left 0.2s"></span>
-               </label>`}
-        </div>
-      `).join('')}
+    <div class="card mb-md a11y-group">
+      <div class="flex items-center gap-xs mb-sm">
+        <span class="a11y-group__icon" style="color:${g.color}; background:${g.color}1f;">${g.icon(20)}</span>
+        <div class="font-bold text-lg">${g.title}</div>
+      </div>
+      ${g.rows.map(r => renderRow(r, g.color, prefs)).join('')}
     </div>
   `;
 }
+
+function renderRow(r, color, prefs) {
+  const value = prefs[r.key] ?? r.defaultValue ?? false;
+
+  if (r.slider) {
+    return `
+      <div class="a11y-row">
+        <span class="a11y-row__icon" style="color:${color};">${r.icon}</span>
+        <span class="a11y-row__label">${r.label}</span>
+        <input type="range" min="${r.min}" max="${r.max}" step="${r.step}"
+               value="${value}" class="a11y-slider"
+               data-action="a11y-slider" data-key="${r.key}"
+               aria-label="${r.label}"/>
+        <span class="text-xs text-muted" style="width:36px; text-align:right;">${value}x</span>
+      </div>
+    `;
+  }
+
+  const isOn = !!value || r.locked;
+  return `
+    <div class="a11y-row">
+      <span class="a11y-row__icon" style="color:${color};">${r.icon}</span>
+      <span class="a11y-row__label">${r.label}</span>
+      ${r.locked ? '<span class="chip chip-success">Activé</span>' : ''}
+      <button class="toggle-switch ${isOn ? 'on' : ''} ${r.locked ? 'is-locked' : ''}"
+              data-action="a11y-toggle" data-key="${r.key}"
+              aria-pressed="${isOn}" aria-label="${r.label}"
+              ${r.locked ? 'disabled' : ''}>
+        <span class="toggle-switch__thumb"></span>
+      </button>
+    </div>
+  `;
+}
+
+renderAccessibility.mount = () => {
+  const main = document.querySelector('main.screen');
+
+  document.querySelectorAll('[data-action="a11y-toggle"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.key;
+      const prefs = store.get('preferences') || {};
+      store.set('preferences', { ...prefs, [key]: !prefs[key] });
+      if (window.__KIVU__?.toast) {
+        window.__KIVU__.toast(`Préférence "${key}" mise à jour`, { type: 'success', duration: 1500 });
+      }
+    })
+  );
+
+  document.querySelectorAll('[data-action="a11y-slider"]').forEach(input =>
+    input.addEventListener('change', () => {
+      const key = input.dataset.key;
+      const prefs = store.get('preferences') || {};
+      store.set('preferences', { ...prefs, [key]: Number(input.value) });
+    })
+  );
+};
