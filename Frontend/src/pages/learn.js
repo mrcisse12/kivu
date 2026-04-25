@@ -1,6 +1,9 @@
 import Chart from 'chart.js/auto';
 import { store } from '../store.js';
 import { icons } from '../components/icons.js';
+import { buildQuiz, LANG_LABELS } from '../data/flashcards.js';
+import { speech } from '../services/speech.js';
+import { mascot, mascotBubble } from '../components/mascot.js';
 
 const QUESTS = [
   { title: 'Marché de Dakar',      sub: 'Négocie avec un vendeur de fruits',   emoji: '🥭', xp: 150, progress: 0.33, color: 'var(--kivu-accent)' },
@@ -38,6 +41,7 @@ const LEADERBOARD = [
 
 const TABS = [
   { id: 'quests',      label: 'Quêtes' },
+  { id: 'quiz',        label: 'Quiz' },
   { id: 'skills',      label: 'Compétences' },
   { id: 'badges',      label: 'Badges' },
   { id: 'leaderboard', label: 'Classement' },
@@ -45,6 +49,14 @@ const TABS = [
 ];
 
 let activeTab = 'quests';
+
+// Quiz state
+let quizLang = 'swa';
+let quizQuestions = null;
+let quizIndex = 0;
+let quizScore = 0;
+let quizAnswered = null;     // selected option for current question
+let quizFinished = false;
 
 export function renderLearn() {
   const user = store.get('user');
@@ -85,11 +97,142 @@ export function renderLearn() {
     </div>
 
     ${activeTab === 'quests'      ? renderQuestsTab()      : ''}
+    ${activeTab === 'quiz'        ? renderQuizTab()        : ''}
     ${activeTab === 'skills'      ? renderSkillsTab()      : ''}
     ${activeTab === 'badges'      ? renderBadgesTab()      : ''}
     ${activeTab === 'leaderboard' ? renderLeaderboardTab() : ''}
     ${activeTab === 'progress'    ? renderProgressTab()    : ''}
   `;
+}
+
+function renderQuizTab() {
+  const langInfo = LANG_LABELS[quizLang];
+
+  if (!quizQuestions) {
+    // Setup screen
+    return `
+      <div class="card mb-md quiz-card">
+        <div class="text-center mb-md">
+          <div class="quiz-mascot animate-float" aria-hidden="true">${mascot.waving(110)}</div>
+          <h2 class="font-display font-bold text-xl mt-sm">Quiz flashcards</h2>
+          <div class="text-sm text-muted">5 phrases, +${langInfo.xpPerCorrect} XP par bonne réponse</div>
+        </div>
+        <div class="font-semibold mb-xs">Choisissez une langue</div>
+        <div class="grid grid-2 mb-md quiz-lang-grid">
+          ${Object.entries(LANG_LABELS).map(([id, info]) => `
+            <button class="quiz-lang-btn ${quizLang === id ? 'active' : ''}"
+                    data-action="quiz-lang" data-lang="${id}">
+              <span class="lang-flag-sm">${info.flag}</span>
+              <span class="font-semibold">${info.name}</span>
+            </button>
+          `).join('')}
+        </div>
+        <button class="btn btn-primary btn-full" data-action="quiz-start"
+                style="background:var(--kivu-accent);">
+          Démarrer le quiz
+        </button>
+      </div>
+    `;
+  }
+
+  if (quizFinished) {
+    const total = quizQuestions.length;
+    const pct = Math.round((quizScore / total) * 100);
+    const xpGained = quizScore * langInfo.xpPerCorrect;
+    const emotion = pct >= 80 ? 'cheering' : pct >= 50 ? 'happy' : 'sad';
+    const reward = pct === 100 ? '🏆' : pct >= 80 ? '🌟' : pct >= 50 ? '🎉' : '💪';
+    const message = pct === 100 ? 'Parfait ! Tu as tout juste !'
+                  : pct >= 80  ? 'Excellent ! Tu maîtrises bien.'
+                  : pct >= 50  ? 'Bien joué, continue à pratiquer.'
+                               : 'Pas grave, on retente ensemble.';
+    return `
+      <div class="card mb-md quiz-card text-center">
+        <div class="quiz-mascot animate-scale-in" aria-hidden="true">${mascot[emotion](120)}</div>
+        <h2 class="font-display font-bold text-xl mt-sm">Quiz terminé ! ${reward}</h2>
+        <div class="text-sm text-muted">${message}</div>
+        <div class="text-lg mt-md"><span class="font-bold text-gradient" style="font-size:36px;">${quizScore}/${total}</span></div>
+        <div class="text-sm text-muted">Score : ${pct}%</div>
+        <div class="chip chip-accent mt-md">+${xpGained} XP gagnés</div>
+        <div class="flex gap-xs mt-md">
+          <button class="btn btn-ghost btn-full" data-action="quiz-reset">Choisir une langue</button>
+          <button class="btn btn-primary btn-full" data-action="quiz-restart"
+                  style="background:var(--kivu-accent);">Recommencer</button>
+        </div>
+      </div>
+    `;
+  }
+
+  const q = quizQuestions[quizIndex];
+  const progress = ((quizIndex) / quizQuestions.length) * 100;
+
+  return `
+    <div class="card mb-md quiz-card">
+      <div class="flex justify-between items-center mb-sm">
+        <span class="text-xs text-muted">Question ${quizIndex + 1} / ${quizQuestions.length}</span>
+        <span class="chip chip-accent">${langInfo.flag} ${langInfo.name}</span>
+      </div>
+      <div class="progress-bar progress-bar--thin mb-md">
+        <div class="progress-fill" style="width:${progress}%; background:var(--kivu-accent);"></div>
+      </div>
+
+      <div class="quiz-question">
+        <div class="text-sm text-muted mb-xs">Comment dit-on en ${langInfo.name} :</div>
+        <div class="font-display font-bold text-2xl">« ${q.question} »</div>
+      </div>
+
+      <div class="quiz-options mt-md">
+        ${q.options.map((opt, i) => {
+          let cls = 'quiz-option';
+          if (quizAnswered != null) {
+            if (opt === q.target) cls += ' is-correct';
+            else if (opt === quizAnswered) cls += ' is-wrong';
+            else cls += ' is-disabled';
+          }
+          return `
+            <button class="${cls}"
+                    data-action="quiz-answer"
+                    data-option="${escapeAttr(opt)}"
+                    ${quizAnswered != null ? 'disabled' : ''}>
+              <span class="quiz-option__letter">${String.fromCharCode(65 + i)}</span>
+              <span class="quiz-option__text">${escapeAttr(opt)}</span>
+              ${quizAnswered != null && opt === q.target ? `<span class="quiz-option__icon">${icons.check(18, 'white')}</span>` : ''}
+              ${quizAnswered != null && opt === quizAnswered && opt !== q.target ? `<span class="quiz-option__icon">${icons.close(18, 'white')}</span>` : ''}
+            </button>
+          `;
+        }).join('')}
+      </div>
+
+      ${quizAnswered != null ? `
+        <div class="quiz-feedback mt-md ${quizAnswered === q.target ? 'is-correct' : 'is-wrong'}">
+          <span class="quiz-feedback__mascot" aria-hidden="true">
+            ${quizAnswered === q.target ? mascot.cheering(56) : mascot.sad(56)}
+          </span>
+          <div class="quiz-feedback__text">
+            ${quizAnswered === q.target
+              ? `<div class="font-bold">Bravo ! 🔥</div><div class="text-sm">+${langInfo.xpPerCorrect} XP gagnés</div>`
+              : `<div class="font-bold">Presque !</div><div class="text-sm">La bonne réponse est <em>« ${escapeAttr(q.target)} »</em></div>`}
+          </div>
+        </div>
+        <div class="flex gap-xs mt-sm">
+          <button class="btn btn-ghost btn-full" data-action="quiz-listen">
+            <span style="display:inline-flex;gap:8px;align-items:center;justify-content:center;">
+              ${icons.speaker(16)} Écouter
+            </span>
+          </button>
+          <button class="btn btn-primary btn-full" data-action="quiz-next"
+                  style="background:var(--kivu-accent);">
+            ${quizIndex === quizQuestions.length - 1 ? 'Voir le score' : 'Suivant'}
+          </button>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function escapeAttr(s) {
+  return String(s)
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 }
 
 function renderQuestsTab() {
@@ -195,17 +338,103 @@ renderLearn.mount = () => {
   const main = document.querySelector('main.screen');
   if (!main) return;
 
+  const rerender = () => {
+    main.innerHTML = renderLearn();
+    renderLearn.mount();
+  };
+
   // Tabs (event delegation propre)
   TABS.forEach(t => {
     document.querySelectorAll(`[data-action="tab-${t.id}"]`).forEach(el =>
       el.addEventListener('click', () => {
         if (activeTab === t.id) return;
         activeTab = t.id;
-        main.innerHTML = renderLearn();
-        renderLearn.mount();
+        rerender();
       })
     );
   });
+
+  // ==== Quiz interactions ====
+  document.querySelectorAll('[data-action="quiz-lang"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      quizLang = btn.dataset.lang;
+      rerender();
+    })
+  );
+
+  document.querySelectorAll('[data-action="quiz-start"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      quizQuestions = buildQuiz(quizLang, 5);
+      quizIndex = 0;
+      quizScore = 0;
+      quizAnswered = null;
+      quizFinished = false;
+      rerender();
+    })
+  );
+
+  document.querySelectorAll('[data-action="quiz-answer"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      if (quizAnswered != null) return;
+      const opt = btn.dataset.option;
+      quizAnswered = opt;
+      const q = quizQuestions[quizIndex];
+      if (opt === q.target) {
+        quizScore++;
+        if (window.__KIVU__?.toast)
+          window.__KIVU__.toast(`Bravo ! 🔥 +${LANG_LABELS[quizLang].xpPerCorrect} XP`, { type: 'success', duration: 1300 });
+      }
+      // Auto-pronounce the correct answer for learning
+      if (speech.ttsSupported) {
+        setTimeout(() => speech.speak(q.target, quizLang), 400);
+      }
+      rerender();
+    })
+  );
+
+  document.querySelectorAll('[data-action="quiz-listen"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const q = quizQuestions[quizIndex];
+      if (q && speech.ttsSupported) speech.speak(q.target, quizLang);
+    })
+  );
+
+  document.querySelectorAll('[data-action="quiz-next"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      if (quizIndex >= quizQuestions.length - 1) {
+        quizFinished = true;
+        // Persist XP earned to user stats
+        const xp = quizScore * LANG_LABELS[quizLang].xpPerCorrect;
+        store.update('user', u => ({
+          ...u,
+          stats: { ...u.stats, xp: u.stats.xp + xp, wordsLearned: u.stats.wordsLearned + quizScore }
+        }));
+      } else {
+        quizIndex++;
+        quizAnswered = null;
+      }
+      rerender();
+    })
+  );
+
+  document.querySelectorAll('[data-action="quiz-reset"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      quizQuestions = null;
+      quizFinished = false;
+      rerender();
+    })
+  );
+
+  document.querySelectorAll('[data-action="quiz-restart"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      quizQuestions = buildQuiz(quizLang, 5);
+      quizIndex = 0;
+      quizScore = 0;
+      quizAnswered = null;
+      quizFinished = false;
+      rerender();
+    })
+  );
 
   // XP Ring (canvas raw)
   const ring = document.getElementById('xp-ring');

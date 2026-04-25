@@ -6,6 +6,7 @@ Couvre : fra, eng, swa, wol, bam, dyu, lin, yor, hau, amh, zul, ibo, bis (Bissa 
 """
 
 import re
+import unicodedata
 
 # Phrases courantes — la "preuve de concept" mobile-first
 COMMON_PHRASES = {
@@ -92,8 +93,17 @@ COMMON_PHRASES = {
 }
 
 
+def _strip_accents(text: str) -> str:
+    """Replie les accents : 'ça' -> 'ca', 'éè' -> 'ee'."""
+    return "".join(
+        c for c in unicodedata.normalize("NFKD", text)
+        if not unicodedata.combining(c)
+    )
+
+
 def _normalize(text: str) -> str:
-    return re.sub(r"[^\w\s]", "", text.lower().strip())
+    """Lower + strip + drop punctuation + fold accents."""
+    return re.sub(r"[^\w\s]", "", _strip_accents(text).lower().strip())
 
 
 def dictionary_translate(text: str, source: str, target: str) -> str:
@@ -106,9 +116,9 @@ def dictionary_translate(text: str, source: str, target: str) -> str:
 
     normalized = _normalize(text)
 
-    # 1) Phrase exacte
+    # 1) Phrase exacte (clé FR ou variante normalisée dans la langue source)
     for phrase_key, translations in COMMON_PHRASES.items():
-        if normalized == phrase_key.lower() or normalized == _normalize(translations.get(source, "")):
+        if normalized == _normalize(phrase_key) or normalized == _normalize(translations.get(source, "")):
             return translations.get(target, text)
 
     # 2) Mot par mot

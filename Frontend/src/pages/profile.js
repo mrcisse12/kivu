@@ -13,13 +13,14 @@ const LANG_INFO = {
 };
 
 const MENU = [
-  { label: 'Notifications',              icon: icons.bell,        color: 'var(--kivu-primary)' },
-  { label: 'Confidentialité & sécurité', icon: icons.lock,        color: 'var(--success)' },
-  { label: 'Accessibilité',              icon: icons.accessibility, color: 'var(--color-accessibility)', path: '/accessibility' },
-  { label: 'Langue de l’app',            icon: icons.globe,       color: 'var(--kivu-accent)' },
-  { label: 'Stockage & hors-ligne',       icon: icons.archive,     color: 'var(--kivu-tertiary)' },
-  { label: 'Aide & support',             icon: icons.chat,        color: 'var(--info)' },
-  { label: 'À propos de KIVU',           icon: icons.heart,       color: 'var(--kivu-secondary)' }
+  { label: 'Paramètres généraux',         icon: icons.settings,    color: 'var(--kivu-primary)',         path: '/settings' },
+  { label: 'Apparence & thème',           icon: icons.eye,         color: 'var(--kivu-tertiary)',        path: '/settings' },
+  { label: 'Abonnement KIVU',             icon: icons.star,        color: 'var(--kivu-accent)',          path: '/settings' },
+  { label: 'Notifications',               icon: icons.bell,        color: 'var(--info)',                 path: '/settings' },
+  { label: 'Accessibilité',               icon: icons.accessibility, color: 'var(--color-accessibility)', path: '/accessibility' },
+  { label: 'Hors-ligne & stockage',       icon: icons.archive,     color: 'var(--kivu-secondary)',       path: '/settings' },
+  { label: 'Confidentialité & sécurité',  icon: icons.lock,        color: 'var(--success)',              path: '/settings' },
+  { label: 'À propos de KIVU',            icon: icons.heart,       color: 'var(--error)',                path: '/settings' }
 ];
 
 export function renderProfile() {
@@ -31,7 +32,9 @@ export function renderProfile() {
   return `
     <div class="screen-header">
       <div class="screen-title">Profil</div>
-      <button class="icon-btn icon-btn--bell" aria-label="Paramètres">${icons.settings(20)}</button>
+      <button class="icon-btn icon-btn--bell" data-nav="/settings" aria-label="Paramètres">
+        ${icons.settings(20)}
+      </button>
     </div>
 
     <!-- Profile card -->

@@ -14,6 +14,7 @@ import { renderAssistant } from './pages/assistant.js';
 import { renderDiaspora } from './pages/diaspora.js';
 import { renderAccessibility } from './pages/accessibility.js';
 import { renderProfile } from './pages/profile.js';
+import { renderSettings, applyTheme } from './pages/settings.js';
 import { renderOnboarding } from './pages/onboarding.js';
 import { renderBottomNav } from './components/bottom-nav.js';
 import { renderDesktopNav } from './components/desktop-nav.js';
@@ -31,6 +32,7 @@ const routes = {
   '/diaspora': renderDiaspora,
   '/accessibility': renderAccessibility,
   '/profile': renderProfile,
+  '/settings': renderSettings,
   '/onboarding': renderOnboarding
 };
 
@@ -63,6 +65,22 @@ function render() {
 // Subscribe to router and global state changes
 router.onChange(render);
 store.subscribe(render);
+
+// Apply persisted theme + font-size BEFORE first paint
+(() => {
+  const prefs = store.get('preferences') || {};
+  applyTheme(prefs.theme || 'auto');
+  if (prefs.fontSize) {
+    document.documentElement.style.setProperty('--root-font-size', `${prefs.fontSize * 16}px`);
+  }
+  // Reagir à l'évolution du thème système si l'utilisateur est en mode 'auto'
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      const cur = (store.get('preferences') || {}).theme || 'auto';
+      if (cur === 'auto') applyTheme('auto');
+    });
+  }
+})();
 
 // Hide splash after mount
 window.addEventListener('load', () => {

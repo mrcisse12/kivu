@@ -1,38 +1,39 @@
 import { store } from '../store.js';
 import { navigate } from '../router.js';
 import { icons } from '../components/icons.js';
+import { mascot } from '../components/mascot.js';
 
 const PAGES = [
   {
-    emoji: '🌍',
+    emotion: 'waving',
     title: 'Bienvenue dans KIVU',
-    subtitle: 'La plateforme mondiale qui réunit 2 000+ langues africaines.',
+    subtitle: 'Je suis Kivi, votre guide. Ensemble on va connecter 2 000+ langues africaines.',
     gradient: 'grad-hero',
     highlight: '2 000+ langues'
   },
   {
-    emoji: '🗣️',
+    emotion: 'happy',
     title: 'Traduction vocale instantanée',
     subtitle: 'Parlez dans votre langue maternelle. KIVU traduit en temps réel, même hors-ligne.',
     gradient: 'grad-sunset',
     highlight: '< 200 ms'
   },
   {
-    emoji: '🎓',
+    emotion: 'cheering',
     title: 'Apprendre en jouant',
     subtitle: 'Quêtes interactives, XP, badges. Maîtrisez une langue en 30 jours.',
     gradient: 'grad-savanna',
     highlight: '85% rétention'
   },
   {
-    emoji: '🛡️',
+    emotion: 'thinking',
     title: 'Préserver notre héritage',
     subtitle: 'Immortalisez les langues menacées. La voix de votre grand-mère, pour toujours.',
     gradient: 'grad-royal',
     highlight: '500+ langues sauvées'
   },
   {
-    emoji: '💙',
+    emotion: 'cheering',
     title: 'Unir l\'humanité',
     subtitle: 'Chaque langue raconte une histoire qui mérite d\'être entendue.',
     gradient: 'grad-hero',
@@ -58,7 +59,7 @@ export function renderOnboarding() {
 
       <main class="onboarding-body">
         <div class="onboarding-illustration animate-scale-in" key="${currentPage}">
-          <span class="onboarding-emoji" aria-hidden="true">${page.emoji}</span>
+          <span class="onboarding-mascot" aria-hidden="true">${mascot[page.emotion](150)}</span>
         </div>
 
         <span class="chip chip-white animate-slide-up">${page.highlight}</span>

@@ -1,6 +1,7 @@
 import { store } from '../store.js';
 import { LANGUAGES } from '../data/languages.js';
 import { icons } from '../components/icons.js';
+import { mascot } from '../components/mascot.js';
 
 // Tuiles fonctionnalités — emojis catégorie autorisés (gamification visuelle)
 // MAIS l'icône principale dans la nav reste SVG pour le côté premium.
@@ -71,6 +72,17 @@ export function renderHome() {
           <span class="font-bold">${xpPct}%</span>
         </div>
       </div>
+    </div>
+
+    <!-- Mascotte de bienvenue -->
+    <div class="card mascot-greeting mb-md">
+      <div class="mascot-greeting__avatar animate-float" aria-hidden="true">${mascot.waving(80)}</div>
+      <div class="mascot-greeting__body">
+        <div class="font-bold">Salut ${firstName} !</div>
+        <div class="text-xs text-muted">Continue ta série de ${user.stats.streak} jours — il te reste 5 minutes aujourd'hui pour la garder.</div>
+      </div>
+      <button class="btn btn-primary btn-sm" data-nav="/learn"
+              style="background:var(--kivu-accent); flex-shrink:0;">Continuer</button>
     </div>
 
     <!-- Action principale -->
