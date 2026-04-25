@@ -164,15 +164,23 @@ export function renderHome() {
       </div>
     </div>
 
-    <!-- Radio Kivi -->
-    <button class="card radio-promo mb-md" data-nav="/radio">
-      <span class="radio-promo__icon">${icons.speaker(28, 'white')}</span>
-      <div style="flex:1; text-align:left;">
-        <div class="font-bold">Radio Kivi</div>
-        <div class="text-xs text-muted">Apprenez en faisant la cuisine, en marchant</div>
-      </div>
-      <span class="chip chip-accent">Nouveau</span>
-    </button>
+    <!-- Radio Kivi + Stories -->
+    <div class="grid grid-2 mb-md">
+      <button class="card radio-promo" data-nav="/radio" style="background:#1CB0F6; color:white; border-color:#1899D6; border-bottom-color:#1899D6;">
+        <span class="radio-promo__icon" style="background:white; color:#1CB0F6;">${icons.speaker(24, 'currentColor')}</span>
+        <div style="flex:1; text-align:left;">
+          <div class="font-bold" style="color:white;">Radio Kivi</div>
+          <div class="text-xs" style="opacity:0.92;">Mode écoute passive</div>
+        </div>
+      </button>
+      <button class="card radio-promo" data-nav="/stories" style="background:#FF9600; color:white; border-color:#E08600; border-bottom-color:#E08600;">
+        <span class="radio-promo__icon" style="background:white; color:#FF9600;">${icons.book(24, 'currentColor')}</span>
+        <div style="flex:1; text-align:left;">
+          <div class="font-bold" style="color:white;">Stories</div>
+          <div class="text-xs" style="opacity:0.92;">Contes & dialogues</div>
+        </div>
+      </button>
+    </div>
 
     <!-- Communauté -->
     <h2 class="font-display font-bold text-lg mb-sm">Communauté KIVU</h2>

@@ -18,6 +18,8 @@ import { renderSettings, applyTheme } from './pages/settings.js';
 import { renderOnboarding } from './pages/onboarding.js';
 import { renderLessonPlayer } from './pages/lesson-player.js';
 import { renderRadio } from './pages/radio.js';
+import { renderStories } from './pages/stories.js';
+import { renderStoryPlayer } from './pages/story-player.js';
 import { setupInstallBanner } from './components/install-banner.js';
 import { renderBottomNav } from './components/bottom-nav.js';
 import { renderDesktopNav } from './components/desktop-nav.js';
@@ -37,6 +39,7 @@ const routes = {
   '/profile': renderProfile,
   '/settings': renderSettings,
   '/radio': renderRadio,
+  '/stories': renderStories,
   '/onboarding': renderOnboarding
 };
 
@@ -55,6 +58,13 @@ function render() {
   if (path.startsWith('/lesson/')) {
     app.innerHTML = `<main class="screen lesson-screen">${renderLessonPlayer()}</main>`;
     if (renderLessonPlayer.mount) renderLessonPlayer.mount();
+    return;
+  }
+
+  // Story player route: /story/<id> — full screen, no nav
+  if (path.startsWith('/story/')) {
+    app.innerHTML = `<main class="screen lesson-screen">${renderStoryPlayer()}</main>`;
+    if (renderStoryPlayer.mount) renderStoryPlayer.mount();
     return;
   }
 

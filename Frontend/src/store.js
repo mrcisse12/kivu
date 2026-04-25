@@ -46,6 +46,10 @@ const defaultState = {
     currentDay: 1,            // prochaine leçon à faire
     hearts: 5,                // vies (régénèrent toutes les 4h)
     heartsRegenAt: null       // ISO date de la prochaine régénération
+  },
+  // Stories complétées (id strings)
+  stories: {
+    completed: []
   }
 };
 

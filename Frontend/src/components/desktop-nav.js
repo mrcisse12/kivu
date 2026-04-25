@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { path: '/business',      icon: icons.business,      label: 'Business' },
   { path: '/multi-party',   icon: icons.multiparty,    label: 'Multi-Party' },
   { path: '/assistant',     icon: icons.assistant,     label: 'Assistant IA' },
+  { path: '/stories',       icon: icons.book,          label: 'Stories' },
   { path: '/diaspora',      icon: icons.diaspora,      label: 'Diaspora' },
   { path: '/accessibility', icon: icons.accessibility, label: 'Accessibilité' },
   { path: '/radio',         icon: icons.speaker,       label: 'Radio Kivi' },

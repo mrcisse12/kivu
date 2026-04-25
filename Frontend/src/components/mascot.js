@@ -1,153 +1,141 @@
 /**
  * KIVU — Mascotte vectorielle "Kivi", esprit du Lac Kivu.
  *
- * Personnage rond et bienveillant inspiré des couleurs du drapeau africain
- * et du baobab. Disponible en plusieurs émotions pour le feedback :
- *   - happy   : encouragement par défaut
- *   - cheering: bonne réponse, célébration
- *   - sad     : mauvaise réponse (mais reste mignon)
- *   - thinking: en cours de réflexion
- *   - sleeping: streak perdu / inactif
- *   - waving  : bienvenue / accueil
+ * Style : flat 2D, couleurs unies, AUCUN dégradé interne.
+ * Inspiré de Duolingo (chouette Duo) mais propre à KIVU et l'Afrique.
  *
- * Toutes les variantes partagent le même body. Seuls les yeux/bouche/accessoires
- * changent — comme Duo l'orange/Duo l'oiseau de Duolingo, mais propre à KIVU.
+ * 6 émotions : happy, cheering, sad, thinking, sleeping, waving.
+ * Toutes partagent le même body (silhouette baobab arrondie).
  */
 
 const PALETTE = {
-  body:        '#174E9C',  // Bleu Lac Kivu
-  bodyLight:   '#3395DA',
-  bodyDark:    '#0A3F72',
-  accent:      '#F2952D',  // Orange savane
+  body:        '#1CB0F6',  // bleu duo
+  bodyDk:      '#1899D6',  // ombre/contour body
+  belly:       '#E5F6FF',  // ventre clair
+  accent:      '#FF9600',  // orange
+  accentDk:    '#E08600',
   white:       '#FFFFFF',
-  ink:         '#14203A',
-  cheek:       '#FFB859'
+  ink:         '#2D3550',  // anthracite (pas full noir)
+  cheek:       '#FFB859',
+  shadow:      'rgba(45, 53, 80, 0.15)'
 };
 
 function svgWrap(content, size = 120, viewBox = '0 0 120 140') {
   return `<svg width="${size}" height="${size * 140 / 120}" viewBox="${viewBox}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${content}</svg>`;
 }
 
-// Corps de base (réutilisé dans toutes les emotions)
+// Corps de base flat — silhouette ovale arrondie
 function body() {
   return `
-    <defs>
-      <linearGradient id="kivi-body-grad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="${PALETTE.bodyLight}"/>
-        <stop offset="1" stop-color="${PALETTE.body}"/>
-      </linearGradient>
-      <radialGradient id="kivi-shine" cx="0.3" cy="0.25" r="0.5">
-        <stop offset="0" stop-color="rgba(255,255,255,0.45)"/>
-        <stop offset="1" stop-color="rgba(255,255,255,0)"/>
-      </radialGradient>
-    </defs>
-    <!-- Ombre portée -->
-    <ellipse cx="60" cy="130" rx="32" ry="5" fill="rgba(20,32,58,0.18)"/>
-    <!-- Corps (forme goutte type baobab simplifié) -->
+    <!-- Ombre portée discrète -->
+    <ellipse cx="60" cy="130" rx="32" ry="5" fill="${PALETTE.shadow}"/>
+
+    <!-- Corps principal (forme ovale arrondie) -->
     <path d="M60 14
              C 28 14, 16 42, 18 70
              C 19 90, 30 110, 42 118
              C 50 124, 70 124, 78 118
              C 90 110, 101 90, 102 70
              C 104 42, 92 14, 60 14 Z"
-          fill="url(#kivi-body-grad)"/>
-    <!-- Reflet brillant -->
-    <ellipse cx="48" cy="46" rx="22" ry="18" fill="url(#kivi-shine)"/>
-    <!-- Joues orangées -->
-    <circle cx="34" cy="80" r="6" fill="${PALETTE.cheek}" opacity="0.55"/>
-    <circle cx="86" cy="80" r="6" fill="${PALETTE.cheek}" opacity="0.55"/>
+          fill="${PALETTE.body}"
+          stroke="${PALETTE.bodyDk}"
+          stroke-width="2.5"/>
+
+    <!-- Ventre plus clair (forme ovale au centre) -->
+    <ellipse cx="60" cy="92" rx="26" ry="22" fill="${PALETTE.belly}"/>
+
+    <!-- Joues orangées (cercles plats) -->
+    <circle cx="34" cy="82" r="6" fill="${PALETTE.cheek}"/>
+    <circle cx="86" cy="82" r="6" fill="${PALETTE.cheek}"/>
   `;
 }
 
-// Variantes d'yeux
+// Variantes d'yeux (toutes plates, sans dégradé)
 const eyes = {
   open: `
-    <circle cx="46" cy="62" r="9" fill="${PALETTE.white}"/>
-    <circle cx="74" cy="62" r="9" fill="${PALETTE.white}"/>
-    <circle cx="48" cy="64" r="4.5" fill="${PALETTE.ink}"/>
-    <circle cx="76" cy="64" r="4.5" fill="${PALETTE.ink}"/>
-    <circle cx="49" cy="62" r="1.6" fill="${PALETTE.white}"/>
-    <circle cx="77" cy="62" r="1.6" fill="${PALETTE.white}"/>
+    <circle cx="46" cy="62" r="10" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="2"/>
+    <circle cx="74" cy="62" r="10" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="2"/>
+    <circle cx="48" cy="64" r="5" fill="${PALETTE.ink}"/>
+    <circle cx="76" cy="64" r="5" fill="${PALETTE.ink}"/>
+    <circle cx="50" cy="62" r="1.8" fill="${PALETTE.white}"/>
+    <circle cx="78" cy="62" r="1.8" fill="${PALETTE.white}"/>
   `,
   cheering: `
-    <!-- Yeux fermés/sourire arc -->
-    <path d="M40 64 Q46 56 54 64" stroke="${PALETTE.ink}" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <path d="M68 64 Q74 56 82 64" stroke="${PALETTE.ink}" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- Yeux fermés en arc heureux -->
+    <path d="M38 64 Q46 54 54 64" stroke="${PALETTE.ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M66 64 Q74 54 82 64" stroke="${PALETTE.ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
   `,
   sad: `
-    <circle cx="46" cy="64" r="8" fill="${PALETTE.white}"/>
-    <circle cx="74" cy="64" r="8" fill="${PALETTE.white}"/>
-    <circle cx="46" cy="66" r="4" fill="${PALETTE.ink}"/>
-    <circle cx="74" cy="66" r="4" fill="${PALETTE.ink}"/>
+    <circle cx="46" cy="64" r="9" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="2"/>
+    <circle cx="74" cy="64" r="9" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="2"/>
+    <circle cx="46" cy="67" r="4.5" fill="${PALETTE.ink}"/>
+    <circle cx="74" cy="67" r="4.5" fill="${PALETTE.ink}"/>
+    <!-- Sourcils inquiets -->
+    <path d="M38 56 L52 60" stroke="${PALETTE.ink}" stroke-width="3" stroke-linecap="round"/>
+    <path d="M68 60 L82 56" stroke="${PALETTE.ink}" stroke-width="3" stroke-linecap="round"/>
     <!-- Larme -->
-    <path d="M40 74 Q42 80 44 74 L44 80 Q42 84 40 80 Z" fill="${PALETTE.bodyLight}" opacity="0.8"/>
+    <path d="M40 76 Q40 84 44 84 Q44 78 40 76 Z" fill="${PALETTE.bodyDk}"/>
   `,
   thinking: `
-    <circle cx="46" cy="62" r="9" fill="${PALETTE.white}"/>
-    <circle cx="74" cy="62" r="9" fill="${PALETTE.white}"/>
-    <circle cx="50" cy="62" r="4.5" fill="${PALETTE.ink}"/>
-    <circle cx="78" cy="62" r="4.5" fill="${PALETTE.ink}"/>
-    <circle cx="51" cy="60" r="1.6" fill="${PALETTE.white}"/>
-    <circle cx="79" cy="60" r="1.6" fill="${PALETTE.white}"/>
+    <circle cx="46" cy="62" r="10" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="2"/>
+    <circle cx="74" cy="62" r="10" fill="${PALETTE.white}" stroke="${PALETTE.ink}" stroke-width="2"/>
+    <circle cx="50" cy="62" r="5" fill="${PALETTE.ink}"/>
+    <circle cx="78" cy="62" r="5" fill="${PALETTE.ink}"/>
   `,
   sleeping: `
-    <path d="M40 62 Q46 66 54 62" stroke="${PALETTE.ink}" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <path d="M68 62 Q74 66 82 62" stroke="${PALETTE.ink}" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <text x="92" y="40" font-family="Nunito,sans-serif" font-size="14" font-weight="800" fill="${PALETTE.bodyLight}">z</text>
-    <text x="100" y="30" font-family="Nunito,sans-serif" font-size="11" font-weight="800" fill="${PALETTE.bodyLight}">z</text>
+    <path d="M38 64 Q46 68 54 64" stroke="${PALETTE.ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M66 64 Q74 68 82 64" stroke="${PALETTE.ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <text x="92" y="40" font-family="Nunito,sans-serif" font-size="16" font-weight="900" fill="${PALETTE.bodyDk}">z</text>
+    <text x="100" y="28" font-family="Nunito,sans-serif" font-size="13" font-weight="900" fill="${PALETTE.bodyDk}">z</text>
   `
 };
 
-// Variantes de bouche
+// Bouches (toutes plates)
 const mouths = {
-  smile:  `<path d="M52 84 Q60 92 68 84" stroke="${PALETTE.ink}" stroke-width="3" fill="none" stroke-linecap="round"/>`,
-  bigSmile: `<path d="M48 82 Q60 96 72 82 Q60 90 48 82 Z" fill="${PALETTE.ink}"/>
-             <path d="M50 86 Q60 94 70 86" stroke="${PALETTE.cheek}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
-  frown:  `<path d="M52 92 Q60 84 68 92" stroke="${PALETTE.ink}" stroke-width="3" fill="none" stroke-linecap="round"/>`,
-  open:   `<ellipse cx="60" cy="86" rx="5" ry="6" fill="${PALETTE.ink}"/>`,
-  zen:    `<path d="M55 86 L65 86" stroke="${PALETTE.ink}" stroke-width="3" stroke-linecap="round"/>`
+  smile:    `<path d="M50 86 Q60 96 70 86" stroke="${PALETTE.ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+  bigSmile: `
+    <path d="M46 84 Q60 102 74 84" fill="${PALETTE.ink}" stroke="${PALETTE.ink}" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M50 90 Q60 96 70 90" stroke="${PALETTE.cheek}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  `,
+  frown:    `<path d="M50 94 Q60 84 70 94" stroke="${PALETTE.ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+  open:     `<ellipse cx="60" cy="88" rx="6" ry="7" fill="${PALETTE.ink}"/>`,
+  zen:      `<path d="M54 88 L66 88" stroke="${PALETTE.ink}" stroke-width="3.5" stroke-linecap="round"/>`
 };
 
-// Accessoires
+// Accessoires plats
 const props = {
   hand_wave: `
-    <g transform="translate(96,72) rotate(15)">
-      <ellipse cx="0" cy="0" rx="10" ry="13" fill="${PALETTE.bodyLight}"/>
-      <path d="M-6 -2 Q0 -8 6 -2" stroke="${PALETTE.white}" stroke-width="1.5" fill="none"/>
+    <g transform="translate(98,72) rotate(20)">
+      <ellipse cx="0" cy="0" rx="11" ry="14" fill="${PALETTE.body}" stroke="${PALETTE.bodyDk}" stroke-width="2"/>
+      <path d="M-6 -3 Q0 -8 6 -3" stroke="${PALETTE.white}" stroke-width="2" fill="none" stroke-linecap="round"/>
     </g>
   `,
   trophy: `
-    <g transform="translate(85,32)">
-      <path d="M-8 -10 L8 -10 L6 0 Q0 6 -6 0 Z" fill="${PALETTE.accent}"/>
-      <rect x="-4" y="0" width="8" height="6" fill="${PALETTE.accent}"/>
-      <rect x="-7" y="6" width="14" height="3" fill="${PALETTE.bodyDark}"/>
-      <text x="0" y="-2" text-anchor="middle" font-size="9" fill="${PALETTE.white}" font-weight="800">★</text>
+    <g transform="translate(86,30)">
+      <path d="M-9 -10 L9 -10 L7 1 Q0 7 -7 1 Z" fill="${PALETTE.accent}" stroke="${PALETTE.accentDk}" stroke-width="2" stroke-linejoin="round"/>
+      <rect x="-4" y="1" width="8" height="6" fill="${PALETTE.accent}" stroke="${PALETTE.accentDk}" stroke-width="2"/>
+      <rect x="-8" y="7" width="16" height="3" fill="${PALETTE.accentDk}"/>
+      <text x="0" y="-2" text-anchor="middle" font-size="10" fill="${PALETTE.white}" font-weight="900">★</text>
     </g>
   `
 };
 
 export const mascot = {
-  /** Heureux par défaut. */
   happy(size = 120) {
     return svgWrap(body() + eyes.open + mouths.smile, size);
   },
-  /** Tu viens de faire quelque chose de bien — on célèbre */
   cheering(size = 120) {
     return svgWrap(body() + eyes.cheering + mouths.bigSmile + props.trophy, size);
   },
-  /** Mauvaise réponse — empathie, pas de honte */
   sad(size = 120) {
     return svgWrap(body() + eyes.sad + mouths.frown, size);
   },
-  /** Au repos, en train de penser */
   thinking(size = 120) {
     return svgWrap(body() + eyes.thinking + mouths.zen, size);
   },
-  /** Streak perdu, viens reprendre l'app */
   sleeping(size = 120) {
     return svgWrap(body() + eyes.sleeping + mouths.zen, size);
   },
-  /** Bienvenue, salut de la main */
   waving(size = 120) {
     return svgWrap(body() + eyes.open + mouths.smile + props.hand_wave, size);
   }
