@@ -38,6 +38,14 @@ const defaultState = {
     fontSize: 1.0,
     highContrast: false,
     offlineOnly: false
+  },
+  // Progrès leçons style Duolingo
+  lessons: {
+    targetLang: 'swa',
+    completed: [],            // [{ id, score, perfect, date }]
+    currentDay: 1,            // prochaine leçon à faire
+    hearts: 5,                // vies (régénèrent toutes les 4h)
+    heartsRegenAt: null       // ISO date de la prochaine régénération
   }
 };
 

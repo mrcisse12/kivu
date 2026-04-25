@@ -4,6 +4,8 @@ import { icons } from '../components/icons.js';
 import { buildQuiz, LANG_LABELS } from '../data/flashcards.js';
 import { speech } from '../services/speech.js';
 import { mascot, mascotBubble } from '../components/mascot.js';
+import { UNITS, buildCurriculum } from '../data/lessons.js';
+import { openLesson } from './lesson-player.js';
 
 const QUESTS = [
   { title: 'Marché de Dakar',      sub: 'Négocie avec un vendeur de fruits',   emoji: '🥭', xp: 150, progress: 0.33, color: 'var(--kivu-accent)' },
@@ -40,15 +42,16 @@ const LEADERBOARD = [
 ];
 
 const TABS = [
-  { id: 'quests',      label: 'Quêtes' },
+  { id: 'path',        label: 'Parcours' },
   { id: 'quiz',        label: 'Quiz' },
+  { id: 'quests',      label: 'Quêtes' },
   { id: 'skills',      label: 'Compétences' },
   { id: 'badges',      label: 'Badges' },
   { id: 'leaderboard', label: 'Classement' },
   { id: 'progress',    label: 'Progression' }
 ];
 
-let activeTab = 'quests';
+let activeTab = 'path';
 
 // Quiz state
 let quizLang = 'swa';
@@ -96,12 +99,128 @@ export function renderLearn() {
       </div>
     </div>
 
+    ${activeTab === 'path'        ? renderPathTab()        : ''}
     ${activeTab === 'quests'      ? renderQuestsTab()      : ''}
     ${activeTab === 'quiz'        ? renderQuizTab()        : ''}
     ${activeTab === 'skills'      ? renderSkillsTab()      : ''}
     ${activeTab === 'badges'      ? renderBadgesTab()      : ''}
     ${activeTab === 'leaderboard' ? renderLeaderboardTab() : ''}
     ${activeTab === 'progress'    ? renderProgressTab()    : ''}
+  `;
+}
+
+function renderPathTab() {
+  const lessonsState = store.get('lessons') || { currentDay: 1, completed: [], targetLang: 'swa', hearts: 5 };
+  const targetLang = lessonsState.targetLang || 'swa';
+  const langInfo = LANG_LABELS[targetLang];
+  const completed = new Map((lessonsState.completed || []).map(c => [c.id, c]));
+  const currentDay = lessonsState.currentDay || 1;
+
+  return `
+    <!-- Header path -->
+    <div class="path-hero card mb-md" style="position:relative; overflow:hidden;">
+      <span class="orb orb--green" style="width:140px;height:140px;top:-50px;right:-30px;opacity:0.35"></span>
+      <div style="position:relative; z-index:1;">
+        <div class="flex justify-between items-center mb-sm">
+          <div>
+            <div class="text-xs text-muted">Vous apprenez</div>
+            <div class="font-display font-bold text-xl">
+              <span class="lang-flag-sm">${langInfo.flag}</span> ${langInfo.name}
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" data-action="path-change-lang">Changer</button>
+        </div>
+        <div class="flex gap-md path-stats">
+          <div><span class="font-bold">${(lessonsState.completed || []).length}</span><span class="text-xs text-muted"> / 30</span><div class="text-xs text-muted">Leçons</div></div>
+          <div><span class="font-bold">❤ ${lessonsState.hearts ?? 5}</span><div class="text-xs text-muted">Vies</div></div>
+          <div><span class="font-bold">🔥 ${(store.get('user').stats.streak)}</span><div class="text-xs text-muted">Série</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Language picker (collapsed) -->
+    <div id="path-lang-picker" class="card mb-md" hidden>
+      <div class="font-bold mb-sm">Choisir une langue cible</div>
+      <div class="grid grid-2 quiz-lang-grid">
+        ${Object.entries(LANG_LABELS).filter(([id]) => id !== 'en').map(([id, info]) => `
+          <button class="quiz-lang-btn ${targetLang === id ? 'active' : ''}"
+                  data-action="path-set-lang" data-lang="${id}">
+            <span class="lang-flag-sm">${info.flag}</span>
+            <span class="font-semibold">${info.name}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Snake path -->
+    <div class="lesson-path">
+      ${UNITS.map(unit => renderUnit(unit, completed, currentDay)).join('')}
+    </div>
+  `;
+}
+
+function renderUnit(unit, completed, currentDay) {
+  // Unit covers 5 days: (unit.id-1)*5 + 1 .. unit.id*5
+  const start = (unit.id - 1) * 5 + 1;
+  const end = unit.id * 5;
+  const days = [];
+  for (let d = start; d <= end; d++) days.push(d);
+
+  return `
+    <div class="lesson-unit">
+      <div class="lesson-unit__banner" style="background:linear-gradient(135deg, ${unit.color}, ${unit.color}aa);">
+        <div class="flex items-center gap-sm">
+          <span style="font-size:32px;">${unit.theme}</span>
+          <div>
+            <div class="text-xs" style="opacity:0.85;">Unité ${unit.id}</div>
+            <div class="font-display font-bold text-lg">${unit.title}</div>
+            <div class="text-xs" style="opacity:0.85;">${unit.desc}</div>
+          </div>
+        </div>
+      </div>
+      <div class="lesson-unit__nodes">
+        ${days.map((d, i) => renderNode(d, i, unit, completed, currentDay)).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderNode(day, indexInUnit, unit, completed, currentDay) {
+  const isDone = completed.has(day);
+  const isCurrent = day === currentDay && !isDone;
+  const isLocked = day > currentDay;
+  const isPerfect = isDone && completed.get(day).perfect;
+
+  // Snake layout: alternate offset
+  const offset = indexInUnit % 2 === 0 ? 0 : 60;
+  const offsetReverse = indexInUnit % 4 === 2 ? -60 : indexInUnit % 4 === 3 ? -30 : indexInUnit % 4 === 1 ? 30 : 0;
+
+  let cls = 'lesson-node';
+  if (isDone)    cls += ' lesson-node--done';
+  if (isCurrent) cls += ' lesson-node--current';
+  if (isLocked)  cls += ' lesson-node--locked';
+  if (isPerfect) cls += ' lesson-node--perfect';
+
+  let content;
+  if (isLocked) content = icons.lock(22, 'currentColor');
+  else if (isPerfect) content = `<span style="font-size:22px;">⭐</span>`;
+  else if (isDone) content = icons.check(22, 'currentColor');
+  else content = `<span class="font-bold">${day}</span>`;
+
+  const label = isCurrent ? 'COMMENCER' : isLocked ? '' : isDone ? 'Terminé' : `Jour ${day}`;
+
+  return `
+    <div class="lesson-node-wrap" style="margin-left:${offsetReverse}px;">
+      ${isCurrent ? `<div class="lesson-node-cta">${label}</div>` : ''}
+      <button class="${cls}"
+              data-action="${isLocked ? 'lesson-locked' : 'lesson-start'}"
+              data-day="${day}"
+              style="--node-color: ${unit.color};"
+              ${isLocked ? 'disabled' : ''}>
+        ${content}
+      </button>
+      <div class="lesson-node-day">J${day}</div>
+    </div>
   `;
 }
 
@@ -353,6 +472,49 @@ renderLearn.mount = () => {
       })
     );
   });
+
+  // ==== Path interactions ====
+  document.querySelectorAll('[data-action="lesson-start"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const day = parseInt(btn.dataset.day, 10);
+      const lessonsState = store.get('lessons') || {};
+      if ((lessonsState.hearts ?? 5) === 0) {
+        if (window.__KIVU__?.toast) {
+          window.__KIVU__.toast('Plus de vies ! Revenez dans quelques heures ou abonnez-vous Pro.', { type: 'warning', duration: 3000 });
+        }
+        return;
+      }
+      openLesson(day);
+    })
+  );
+
+  document.querySelectorAll('[data-action="lesson-locked"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      if (window.__KIVU__?.toast) {
+        window.__KIVU__.toast('Terminez les leçons précédentes pour débloquer celle-ci.', { type: 'info', duration: 2000 });
+      }
+    })
+  );
+
+  document.querySelectorAll('[data-action="path-change-lang"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const picker = document.getElementById('path-lang-picker');
+      if (picker) picker.hidden = !picker.hidden;
+    })
+  );
+
+  document.querySelectorAll('[data-action="path-set-lang"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const lang = btn.dataset.lang;
+      const lessonsState = store.get('lessons') || {};
+      // Reset progression when switching language so the user starts fresh
+      store.set('lessons', { ...lessonsState, targetLang: lang, completed: [], currentDay: 1 });
+      if (window.__KIVU__?.toast) {
+        window.__KIVU__.toast(`Vous apprenez maintenant ${LANG_LABELS[lang].name}`, { type: 'success' });
+      }
+      rerender();
+    })
+  );
 
   // ==== Quiz interactions ====
   document.querySelectorAll('[data-action="quiz-lang"]').forEach(btn =>

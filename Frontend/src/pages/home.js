@@ -164,6 +164,16 @@ export function renderHome() {
       </div>
     </div>
 
+    <!-- Radio Kivi -->
+    <button class="card radio-promo mb-md" data-nav="/radio">
+      <span class="radio-promo__icon">${icons.speaker(28, 'white')}</span>
+      <div style="flex:1; text-align:left;">
+        <div class="font-bold">Radio Kivi</div>
+        <div class="text-xs text-muted">Apprenez en faisant la cuisine, en marchant</div>
+      </div>
+      <span class="chip chip-accent">Nouveau</span>
+    </button>
+
     <!-- Communauté -->
     <h2 class="font-display font-bold text-lg mb-sm">Communauté KIVU</h2>
     <div class="flex flex-col gap-xs mb-lg">

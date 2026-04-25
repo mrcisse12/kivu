@@ -16,6 +16,9 @@ import { renderAccessibility } from './pages/accessibility.js';
 import { renderProfile } from './pages/profile.js';
 import { renderSettings, applyTheme } from './pages/settings.js';
 import { renderOnboarding } from './pages/onboarding.js';
+import { renderLessonPlayer } from './pages/lesson-player.js';
+import { renderRadio } from './pages/radio.js';
+import { setupInstallBanner } from './components/install-banner.js';
 import { renderBottomNav } from './components/bottom-nav.js';
 import { renderDesktopNav } from './components/desktop-nav.js';
 import { store } from './store.js';
@@ -33,6 +36,7 @@ const routes = {
   '/accessibility': renderAccessibility,
   '/profile': renderProfile,
   '/settings': renderSettings,
+  '/radio': renderRadio,
   '/onboarding': renderOnboarding
 };
 
@@ -44,6 +48,13 @@ function render() {
   // Onboarding first
   if (!store.get('onboardingCompleted') && path !== '/onboarding') {
     navigate('/onboarding');
+    return;
+  }
+
+  // Lesson player route: /lesson/<day> — full screen, no nav
+  if (path.startsWith('/lesson/')) {
+    app.innerHTML = `<main class="screen lesson-screen">${renderLessonPlayer()}</main>`;
+    if (renderLessonPlayer.mount) renderLessonPlayer.mount();
     return;
   }
 
@@ -98,6 +109,9 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
 }
+
+// Custom PWA install banner with Kivi mascot
+setupInstallBanner();
 
 // Event delegation for navigation links
 document.addEventListener('click', (e) => {

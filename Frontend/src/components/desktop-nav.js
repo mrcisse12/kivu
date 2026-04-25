@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { path: '/assistant',     icon: icons.assistant,     label: 'Assistant IA' },
   { path: '/diaspora',      icon: icons.diaspora,      label: 'Diaspora' },
   { path: '/accessibility', icon: icons.accessibility, label: 'Accessibilité' },
+  { path: '/radio',         icon: icons.speaker,       label: 'Radio Kivi' },
   { path: '/profile',       icon: icons.profile,       label: 'Profil' }
 ];
 
