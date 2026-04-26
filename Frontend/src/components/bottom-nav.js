@@ -1,17 +1,20 @@
 import { icons } from './icons.js';
+import { t } from '../i18n/index.js';
 
-const TABS = [
-  { path: '/',         icon: icons.home,      label: 'Accueil' },
-  { path: '/translate', icon: icons.translate, label: 'Traduire' },
-  { path: '/learn',    icon: icons.learn,     label: 'Apprendre' },
-  { path: '/preserve', icon: icons.preserve,  label: 'Préserver' },
-  { path: '/profile',  icon: icons.profile,   label: 'Profil' }
-];
+function tabs() {
+  return [
+    { path: '/',          icon: icons.home,      label: t('nav.home') },
+    { path: '/translate', icon: icons.translate, label: t('nav.translate') },
+    { path: '/learn',     icon: icons.learn,     label: t('nav.learn') },
+    { path: '/preserve',  icon: icons.preserve,  label: t('nav.preserve') },
+    { path: '/profile',   icon: icons.profile,   label: t('nav.profile') }
+  ];
+}
 
 export function renderBottomNav(currentPath) {
   return `
-    <nav class="bottom-nav glass" aria-label="Navigation principale">
-      ${TABS.map(tab => {
+    <nav class="bottom-nav glass" aria-label="Navigation">
+      ${tabs().map(tab => {
         const isActive = currentPath === tab.path || (tab.path === '/' && currentPath === '/home');
         return `
           <button class="bottom-nav-item ${isActive ? 'active' : ''}"

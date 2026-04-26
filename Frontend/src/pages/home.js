@@ -2,19 +2,22 @@ import { store } from '../store.js';
 import { LANGUAGES } from '../data/languages.js';
 import { icons } from '../components/icons.js';
 import { mascot } from '../components/mascot.js';
+import { t } from '../i18n/index.js';
 
 // Tuiles fonctionnalités — emojis catégorie autorisés (gamification visuelle)
 // MAIS l'icône principale dans la nav reste SVG pour le côté premium.
-const FEATURES = [
-  { path: '/translate',     emoji: '🗣️', color: 'var(--color-translation)',  title: 'Traduction',    desc: 'Voix temps réel' },
-  { path: '/learn',         emoji: '🎓', color: 'var(--color-learning)',     title: 'Apprentissage', desc: 'Quêtes gamifiées' },
-  { path: '/preserve',      emoji: '🛡️', color: 'var(--color-preservation)', title: 'Préservation',  desc: 'Archive éternelle' },
-  { path: '/business',      emoji: '💼', color: 'var(--color-business)',     title: 'Business',      desc: 'Commerce multilingue' },
-  { path: '/multi-party',   emoji: '🤝', color: 'var(--color-multiparty)',   title: 'Multi-Party',   desc: 'Réunions multilangues' },
-  { path: '/assistant',     emoji: '✨', color: 'var(--color-assistant)',    title: 'AI Tutor',      desc: 'Assistant personnel' },
-  { path: '/diaspora',      emoji: '💙', color: 'var(--color-diaspora)',     title: 'Diaspora',      desc: 'Familles connectées' },
-  { path: '/accessibility', emoji: '♿', color: 'var(--color-accessibility)', title: 'Accessibilité', desc: 'Pour tous, partout' }
-];
+function features() {
+  return [
+    { path: '/translate',     emoji: '🗣️', color: 'var(--color-translation)',  title: t('features.translation'),   desc: t('features.translationDesc') },
+    { path: '/learn',         emoji: '🎓', color: 'var(--color-learning)',     title: t('features.learning'),      desc: t('features.learningDesc') },
+    { path: '/preserve',      emoji: '🛡️', color: 'var(--color-preservation)', title: t('features.preservation'),  desc: t('features.preservationDesc') },
+    { path: '/business',      emoji: '💼', color: 'var(--color-business)',     title: t('features.business'),      desc: t('features.businessDesc') },
+    { path: '/multi-party',   emoji: '🤝', color: 'var(--color-multiparty)',   title: t('features.multiparty'),    desc: t('features.multipartyDesc') },
+    { path: '/assistant',     emoji: '✨', color: 'var(--color-assistant)',    title: t('features.assistant'),     desc: t('features.assistantDesc') },
+    { path: '/diaspora',      emoji: '💙', color: 'var(--color-diaspora)',     title: t('features.diaspora'),      desc: t('features.diasporaDesc') },
+    { path: '/accessibility', emoji: '♿', color: 'var(--color-accessibility)', title: t('features.accessibility'), desc: t('features.accessibilityDesc') }
+  ];
+}
 
 export function renderHome() {
   const user = store.get('user');
@@ -29,7 +32,7 @@ export function renderHome() {
         <div class="text-sm text-muted">${greeting}</div>
         <div class="screen-title">${firstName}</div>
       </div>
-      <button class="icon-btn icon-btn--bell" aria-label="Notifications">
+      <button class="icon-btn icon-btn--bell" aria-label="${t('common.new')}">
         ${icons.bell(22)}
         <span class="notification-dot" aria-hidden="true"></span>
       </button>
@@ -44,23 +47,23 @@ export function renderHome() {
         <div class="flex justify-between items-center mb-sm">
           <div class="flex items-center gap-xs">
             <span style="font-size:18px;" class="animate-breathe" aria-hidden="true">🔥</span>
-            <span class="text-sm" style="opacity:0.92; font-weight:600;">Série de ${user.stats.streak} jours</span>
+            <span class="text-sm" style="opacity:0.92; font-weight:600;">${t('home.streakDays', { count: user.stats.streak })}</span>
           </div>
-          <span class="badge-live" style="background:rgba(255,255,255,0.18); color:white;">En direct</span>
+          <span class="badge-live" style="background:rgba(255,255,255,0.18); color:white;">${t('common.live')}</span>
         </div>
 
         <div class="flex gap-lg mb-md">
           <div>
             <div class="text-2xl font-bold" data-counter="${user.stats.xp}">${user.stats.xp.toLocaleString('fr-FR')}</div>
-            <div class="text-xs hero-stat-label">XP</div>
+            <div class="text-xs hero-stat-label">${t('home.xp')}</div>
           </div>
           <div>
             <div class="text-2xl font-bold">${user.stats.level}</div>
-            <div class="text-xs hero-stat-label">Niveau</div>
+            <div class="text-xs hero-stat-label">${t('home.level')}</div>
           </div>
           <div>
             <div class="text-2xl font-bold" data-counter="${user.stats.wordsLearned}">${user.stats.wordsLearned}</div>
-            <div class="text-xs hero-stat-label">Mots</div>
+            <div class="text-xs hero-stat-label">${t('home.words')}</div>
           </div>
         </div>
 
@@ -68,7 +71,7 @@ export function renderHome() {
           <div class="progress-fill" style="width: ${xpPct}%; background:linear-gradient(90deg, #FFB859, #FFFFFF);"></div>
         </div>
         <div class="flex justify-between text-xs" style="opacity:0.92;">
-          <span>Niveau ${user.stats.level} — Maître Conversationnel</span>
+          <span>${t('home.level')} ${user.stats.level} — ${t('home.levelMaster')}</span>
           <span class="font-bold">${xpPct}%</span>
         </div>
       </div>
@@ -78,41 +81,41 @@ export function renderHome() {
     <div class="card mascot-greeting mb-md">
       <div class="mascot-greeting__avatar animate-float" aria-hidden="true">${mascot.waving(80)}</div>
       <div class="mascot-greeting__body">
-        <div class="font-bold">Salut ${firstName} !</div>
-        <div class="text-xs text-muted">Continue ta série de ${user.stats.streak} jours — il te reste 5 minutes aujourd'hui pour la garder.</div>
+        <div class="font-bold">${t('home.greetingMascot', { name: firstName })}</div>
+        <div class="text-xs text-muted">${t('home.greetingMascotSub', { streak: user.stats.streak })}</div>
       </div>
       <button class="btn btn-primary btn-sm" data-nav="/learn"
-              style="background:var(--kivu-accent); flex-shrink:0;">Continuer</button>
+              style="background:var(--kivu-accent); flex-shrink:0;">${t('common.continue')}</button>
     </div>
 
     <!-- Action principale -->
     <button class="card featured-action mb-md" data-nav="/translate">
       <span class="featured-action__icon">${icons.mic(28, 'white')}</span>
       <div class="featured-action__body">
-        <div class="font-bold text-md">Démarrer une traduction</div>
-        <div class="text-xs text-muted">Parlez, écoutez, comprenez — instantané</div>
+        <div class="font-bold text-md">${t('home.startTranslation')}</div>
+        <div class="text-xs text-muted">${t('home.startTranslationDesc')}</div>
       </div>
       <span class="featured-action__arrow">${icons.chevronRight(20)}</span>
     </button>
 
     <!-- Grille des 8 fonctionnalités -->
     <div class="section-head mb-sm mt-lg">
-      <h2 class="font-display font-bold text-lg">Nos 8 révolutions</h2>
-      <span class="text-xs text-muted">Tout, en une seule app</span>
+      <h2 class="font-display font-bold text-lg">${t('home.sectionFeatures')}</h2>
+      <span class="text-xs text-muted">${t('home.sectionFeaturesSub')}</span>
     </div>
     <div class="grid grid-2 mb-lg">
-      ${FEATURES.map(f => renderFeatureTile(f)).join('')}
+      ${features().map(f => renderFeatureTile(f)).join('')}
     </div>
 
     <!-- Impact en temps réel -->
     <div class="section-head mb-sm">
-      <h2 class="font-display font-bold text-lg">Impact KIVU</h2>
-      <span class="badge-live">En direct</span>
+      <h2 class="font-display font-bold text-lg">${t('home.sectionImpact')}</h2>
+      <span class="badge-live">${t('common.live')}</span>
     </div>
     <div class="grid grid-3 mb-lg">
-      ${renderImpact('2 047', 'Langues actives', 'var(--kivu-primary)', icons.globe)}
-      ${renderImpact('127M', 'Personnes',         'var(--kivu-accent)',  icons.users)}
-      ${renderImpact('483',   'Langues sauvées',  'var(--kivu-tertiary)', icons.preserve)}
+      ${renderImpact('2 047', t('home.impactLanguages'), 'var(--kivu-primary)', icons.globe)}
+      ${renderImpact('127M',  t('home.impactPeople'),    'var(--kivu-accent)',  icons.users)}
+      ${renderImpact('483',   t('home.impactSaved'),     'var(--kivu-tertiary)', icons.preserve)}
     </div>
 
     <!-- Défi du jour -->
@@ -169,21 +172,21 @@ export function renderHome() {
       <button class="card radio-promo" data-nav="/radio" style="background:#1CB0F6; color:white; border-color:#1899D6; border-bottom-color:#1899D6;">
         <span class="radio-promo__icon" style="background:white; color:#1CB0F6;">${icons.speaker(24, 'currentColor')}</span>
         <div style="flex:1; text-align:left;">
-          <div class="font-bold" style="color:white;">Radio Kivi</div>
-          <div class="text-xs" style="opacity:0.92;">Mode écoute passive</div>
+          <div class="font-bold" style="color:white;">${t('home.radioCard')}</div>
+          <div class="text-xs" style="opacity:0.92;">${t('home.radioCardSub')}</div>
         </div>
       </button>
       <button class="card radio-promo" data-nav="/stories" style="background:#FF9600; color:white; border-color:#E08600; border-bottom-color:#E08600;">
         <span class="radio-promo__icon" style="background:white; color:#FF9600;">${icons.book(24, 'currentColor')}</span>
         <div style="flex:1; text-align:left;">
-          <div class="font-bold" style="color:white;">Stories</div>
-          <div class="text-xs" style="opacity:0.92;">Contes & dialogues</div>
+          <div class="font-bold" style="color:white;">${t('home.storiesCard')}</div>
+          <div class="text-xs" style="opacity:0.92;">${t('home.storiesCardSub')}</div>
         </div>
       </button>
     </div>
 
     <!-- Communauté -->
-    <h2 class="font-display font-bold text-lg mb-sm">Communauté KIVU</h2>
+    <h2 class="font-display font-bold text-lg mb-sm">${t('home.sectionCommunity')}</h2>
     <div class="flex flex-col gap-xs mb-lg">
       ${renderCommunityPost('👵🏾', 'Mamie Awa', 'a enregistré 12 proverbes Wolof', 'il y a 3 h')}
       ${renderCommunityPost('👨🏾‍🎓', 'Koffi', 'a terminé le niveau 15 en Dioula', 'il y a 5 h')}
@@ -229,9 +232,9 @@ function renderCommunityPost(avatar, name, action, time) {
 
 function computeGreeting() {
   const h = new Date().getHours();
-  if (h < 12) return 'Bonjour';
-  if (h < 18) return 'Bon après-midi';
-  return 'Bonsoir';
+  if (h < 12) return t('greeting.morning');
+  if (h < 18) return t('greeting.afternoon');
+  return t('greeting.evening');
 }
 
 function formatSpeakers(count) {

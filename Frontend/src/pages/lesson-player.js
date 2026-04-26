@@ -510,11 +510,13 @@ function finishLesson() {
   const perfect = mistakes === 0;
   if (already) {
     already.score = Math.max(already.score || 0, score);
+    already.total = currentLesson.exercises.length;
     already.perfect = already.perfect || perfect;
   } else {
     completed.push({
       id: currentLesson.id,
       score,
+      total: currentLesson.exercises.length,
       perfect,
       date: new Date().toISOString()
     });

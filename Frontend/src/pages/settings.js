@@ -15,18 +15,22 @@ import { store } from '../store.js';
 import { icons } from '../components/icons.js';
 import { mascot } from '../components/mascot.js';
 import { recorder } from '../services/recorder.js';
+import { t, setLang, getLang, LANGS_AVAILABLE } from '../i18n/index.js';
 
-const SECTIONS = [
-  { id: 'appearance',   label: 'Apparence',           icon: 'eye' },
-  { id: 'subscription', label: 'Abonnement',          icon: 'star' },
-  { id: 'account',      label: 'Compte',              icon: 'profile' },
-  { id: 'notifications', label: 'Notifications',     icon: 'bell' },
-  { id: 'storage',      label: 'Hors-ligne & stockage', icon: 'archive' },
-  { id: 'privacy',      label: 'Confidentialité',     icon: 'lock' },
-  { id: 'about',        label: 'À propos',            icon: 'globe' }
-];
+function sections() {
+  return [
+    { id: 'language',     label: t('settings.sections.language'),     icon: 'globe' },
+    { id: 'appearance',   label: t('settings.sections.appearance'),   icon: 'eye' },
+    { id: 'subscription', label: t('settings.sections.subscription'), icon: 'star' },
+    { id: 'account',      label: t('settings.sections.account'),      icon: 'profile' },
+    { id: 'notifications', label: t('settings.sections.notifications'), icon: 'bell' },
+    { id: 'storage',      label: t('settings.sections.storage'),      icon: 'archive' },
+    { id: 'privacy',      label: t('settings.sections.privacy'),      icon: 'lock' },
+    { id: 'about',        label: t('settings.sections.about'),        icon: 'heart' }
+  ];
+}
 
-let activeSection = 'appearance';
+let activeSection = 'language';
 
 const PLANS = [
   {
@@ -94,15 +98,15 @@ export function renderSettings() {
   return `
     <div class="screen-header">
       <div>
-        <div class="screen-title">Paramètres</div>
-        <div class="screen-subtitle">Personnalisez votre KIVU</div>
+        <div class="screen-title">${t('settings.title')}</div>
+        <div class="screen-subtitle">${t('settings.subtitle')}</div>
       </div>
     </div>
 
     <!-- Section pills -->
     <div class="scroll-x mb-md">
       <div class="scroll-x-row tabs-row">
-        ${SECTIONS.map(s => `
+        ${sections().map(s => `
           <button class="pill-tab ${activeSection === s.id ? 'active' : ''}"
                   data-action="settings-section" data-section="${s.id}">
             <span style="display:inline-flex;gap:6px;align-items:center;">
@@ -114,13 +118,48 @@ export function renderSettings() {
       </div>
     </div>
 
-    ${activeSection === 'appearance'   ? renderAppearance(prefs)    : ''}
-    ${activeSection === 'subscription' ? renderSubscription()        : ''}
-    ${activeSection === 'account'      ? renderAccount()             : ''}
+    ${activeSection === 'language'      ? renderLanguage()           : ''}
+    ${activeSection === 'appearance'    ? renderAppearance(prefs)    : ''}
+    ${activeSection === 'subscription'  ? renderSubscription()       : ''}
+    ${activeSection === 'account'       ? renderAccount()            : ''}
     ${activeSection === 'notifications' ? renderNotifications(prefs) : ''}
-    ${activeSection === 'storage'      ? renderStorage()             : ''}
-    ${activeSection === 'privacy'      ? renderPrivacy()             : ''}
-    ${activeSection === 'about'        ? renderAbout()               : ''}
+    ${activeSection === 'storage'       ? renderStorage()            : ''}
+    ${activeSection === 'privacy'       ? renderPrivacy()            : ''}
+    ${activeSection === 'about'         ? renderAbout()              : ''}
+  `;
+}
+
+function renderLanguage() {
+  const cur = getLang();
+  return `
+    <div class="card mb-md">
+      <div class="font-bold text-lg mb-xs">${t('settings.language.title')}</div>
+      <div class="text-xs text-muted mb-sm">${t('settings.language.desc')}</div>
+
+      <div class="lang-cards">
+        ${LANGS_AVAILABLE.map(l => `
+          <button class="lang-card ${cur === l.id ? 'active' : ''}"
+                  data-action="set-ui-lang" data-lang="${l.id}">
+            <span class="lang-card__flag">${l.flag}</span>
+            <div class="lang-card__body">
+              <div class="font-bold">${l.name}</div>
+              <div class="text-xs text-muted">${l.native}</div>
+            </div>
+            ${cur === l.id ? `<span class="lang-card__check">${icons.check(18, 'white')}</span>` : ''}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="card mb-md">
+      <div class="mascot-bubble">
+        <div class="mascot-bubble__avatar">${mascot.thinking(64)}</div>
+        <div class="mascot-bubble__speech">
+          <div class="font-bold">Wolof = sax !</div>
+          <div class="text-xs text-muted mt-xs">Une app de langues africaines doit pouvoir s'utiliser dans une langue africaine. C'est notre engagement.</div>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -491,6 +530,20 @@ renderSettings.mount = () => {
       store.set('preferences', { ...prefs, theme });
       applyTheme(theme);
       rerender();
+    })
+  );
+
+  // UI language
+  document.querySelectorAll('[data-action="set-ui-lang"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const lang = btn.dataset.lang;
+      const prefs = store.get('preferences') || {};
+      store.set('preferences', { ...prefs, uiLang: lang });
+      setLang(lang); // triggers global re-render via onLangChange
+      if (window.__KIVU__?.toast) {
+        const name = LANGS_AVAILABLE.find(l => l.id === lang)?.native || lang;
+        window.__KIVU__.toast(`Interface : ${name}`, { type: 'success', duration: 1400 });
+      }
     })
   );
 

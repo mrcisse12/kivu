@@ -21,6 +21,8 @@ import { renderRadio } from './pages/radio.js';
 import { renderStories } from './pages/stories.js';
 import { renderStoryPlayer } from './pages/story-player.js';
 import { setupInstallBanner } from './components/install-banner.js';
+import { setupMascotTracker } from './components/mascot-tracker.js';
+import { initI18n, onLangChange } from './i18n/index.js';
 import { renderBottomNav } from './components/bottom-nav.js';
 import { renderDesktopNav } from './components/desktop-nav.js';
 import { store } from './store.js';
@@ -87,10 +89,13 @@ function render() {
 router.onChange(render);
 store.subscribe(render);
 
-// Apply persisted theme + font-size BEFORE first paint
+// Apply persisted theme + i18n + font-size BEFORE first paint
 (() => {
   const prefs = store.get('preferences') || {};
   applyTheme(prefs.theme || 'auto');
+  initI18n(prefs.uiLang || 'fr');
+  // Re-render the whole app when UI language changes
+  onLangChange(() => render());
   if (prefs.fontSize) {
     document.documentElement.style.setProperty('--root-font-size', `${prefs.fontSize * 16}px`);
   }
@@ -122,6 +127,9 @@ if ('serviceWorker' in navigator) {
 
 // Custom PWA install banner with Kivi mascot
 setupInstallBanner();
+
+// Mascot eye-tracking (Kivi suit le curseur + cligne aléatoirement)
+setupMascotTracker();
 
 // Event delegation for navigation links
 document.addEventListener('click', (e) => {

@@ -1,23 +1,26 @@
 import { icons } from './icons.js';
+import { t } from '../i18n/index.js';
 
-const NAV_ITEMS = [
-  { path: '/',              icon: icons.home,          label: 'Accueil' },
-  { path: '/translate',     icon: icons.translate,     label: 'Traduction' },
-  { path: '/learn',         icon: icons.learn,         label: 'Apprentissage' },
-  { path: '/preserve',      icon: icons.preserve,      label: 'Préservation' },
-  { path: '/business',      icon: icons.business,      label: 'Business' },
-  { path: '/multi-party',   icon: icons.multiparty,    label: 'Multi-Party' },
-  { path: '/assistant',     icon: icons.assistant,     label: 'Assistant IA' },
-  { path: '/stories',       icon: icons.book,          label: 'Stories' },
-  { path: '/diaspora',      icon: icons.diaspora,      label: 'Diaspora' },
-  { path: '/accessibility', icon: icons.accessibility, label: 'Accessibilité' },
-  { path: '/radio',         icon: icons.speaker,       label: 'Radio Kivi' },
-  { path: '/profile',       icon: icons.profile,       label: 'Profil' }
-];
+function navItems() {
+  return [
+    { path: '/',              icon: icons.home,          label: t('nav.home') },
+    { path: '/translate',     icon: icons.translate,     label: t('nav.translate') },
+    { path: '/learn',         icon: icons.learn,         label: t('nav.learn') },
+    { path: '/preserve',      icon: icons.preserve,      label: t('nav.preserve') },
+    { path: '/business',      icon: icons.business,      label: t('nav.business') },
+    { path: '/multi-party',   icon: icons.multiparty,    label: t('nav.multiparty') },
+    { path: '/assistant',     icon: icons.assistant,     label: t('nav.assistant') },
+    { path: '/stories',       icon: icons.book,          label: t('nav.stories') },
+    { path: '/diaspora',      icon: icons.diaspora,      label: t('nav.diaspora') },
+    { path: '/accessibility', icon: icons.accessibility, label: t('nav.accessibility') },
+    { path: '/radio',         icon: icons.speaker,       label: t('nav.radio') },
+    { path: '/profile',       icon: icons.profile,       label: t('nav.profile') }
+  ];
+}
 
 export function renderDesktopNav(currentPath) {
   return `
-    <aside class="desktop-nav" aria-label="Navigation latérale">
+    <aside class="desktop-nav" aria-label="Navigation">
       <div class="brand">
         <span class="brand-logo" aria-hidden="true">
           <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -31,12 +34,12 @@ export function renderDesktopNav(currentPath) {
             <path d="M6 4h4v10l8-10h5l-8 10 9 14h-5l-7-11-2 2v9H6V4z" fill="url(#brand-grad)"/>
           </svg>
         </span>
-        <span class="brand-text">KIVU</span>
+        <span class="brand-text">${t('app.name')}</span>
       </div>
-      <div class="brand-tagline">Unir l'Afrique par la langue</div>
+      <div class="brand-tagline">${t('app.tagline')}</div>
 
-      <div class="nav-section-label">Plateforme</div>
-      ${NAV_ITEMS.map(item => {
+      <div class="nav-section-label">${t('nav.home')}</div>
+      ${navItems().map(item => {
         const isActive = currentPath === item.path || (item.path === '/' && currentPath === '/home');
         return `
           <button class="desktop-nav-item ${isActive ? 'active' : ''}"

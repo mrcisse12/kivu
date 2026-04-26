@@ -6,6 +6,7 @@ import { speech } from '../services/speech.js';
 import { mascot, mascotBubble } from '../components/mascot.js';
 import { UNITS, buildCurriculum } from '../data/lessons.js';
 import { openLesson } from './lesson-player.js';
+import { t } from '../i18n/index.js';
 
 const QUESTS = [
   { title: 'Marché de Dakar',      sub: 'Négocie avec un vendeur de fruits',   emoji: '🥭', xp: 150, progress: 0.33, color: 'var(--kivu-accent)' },
@@ -41,15 +42,17 @@ const LEADERBOARD = [
   { rank: 42, name: 'Vous',      flag: '🇨🇮', xp: 2340,  avatar: '🧑🏾', isMe: true }
 ];
 
-const TABS = [
-  { id: 'path',        label: 'Parcours' },
-  { id: 'quiz',        label: 'Quiz' },
-  { id: 'quests',      label: 'Quêtes' },
-  { id: 'skills',      label: 'Compétences' },
-  { id: 'badges',      label: 'Badges' },
-  { id: 'leaderboard', label: 'Classement' },
-  { id: 'progress',    label: 'Progression' }
-];
+function getTabs() {
+  return [
+    { id: 'path',        label: t('learn.tabs.path') },
+    { id: 'quiz',        label: t('learn.tabs.quiz') },
+    { id: 'quests',      label: t('learn.tabs.quests') },
+    { id: 'skills',      label: t('learn.tabs.skills') },
+    { id: 'badges',      label: t('learn.tabs.badges') },
+    { id: 'leaderboard', label: t('learn.tabs.leaderboard') },
+    { id: 'progress',    label: t('learn.tabs.progress') }
+  ];
+}
 
 let activeTab = 'path';
 
@@ -92,9 +95,9 @@ export function renderLearn() {
     <!-- Tabs -->
     <div class="scroll-x mb-md">
       <div class="scroll-x-row tabs-row">
-        ${TABS.map(t => `
-          <button class="pill-tab ${activeTab === t.id ? 'active' : ''}"
-                  data-action="tab-${t.id}">${t.label}</button>
+        ${getTabs().map(tab => `
+          <button class="pill-tab ${activeTab === tab.id ? 'active' : ''}"
+                  data-action="tab-${tab.id}">${tab.label}</button>
         `).join('')}
       </div>
     </div>
@@ -185,14 +188,29 @@ function renderUnit(unit, completed, currentDay) {
   `;
 }
 
+function computeStars(record) {
+  // 3 stars: perfect (0 mistakes)
+  // 2 stars: 1-2 mistakes (>= 80% correct)
+  // 1 star : completed but >2 mistakes
+  if (!record) return 0;
+  if (record.perfect) return 3;
+  // We don't track mistakes precisely in older records, so approximate via score
+  const score  = record.score ?? 0;
+  const total  = record.total ?? 6;        // default lesson length
+  const ratio  = total > 0 ? score / total : 0;
+  if (ratio >= 0.8) return 2;
+  return 1;
+}
+
 function renderNode(day, indexInUnit, unit, completed, currentDay) {
-  const isDone = completed.has(day);
+  const record = completed.get(day);
+  const isDone = !!record;
   const isCurrent = day === currentDay && !isDone;
   const isLocked = day > currentDay;
-  const isPerfect = isDone && completed.get(day).perfect;
+  const stars = isDone ? computeStars(record) : 0;
+  const isPerfect = stars === 3;
 
-  // Snake layout: alternate offset
-  const offset = indexInUnit % 2 === 0 ? 0 : 60;
+  // Snake layout: alternate offset (offset variable kept for future tweaks)
   const offsetReverse = indexInUnit % 4 === 2 ? -60 : indexInUnit % 4 === 3 ? -30 : indexInUnit % 4 === 1 ? 30 : 0;
 
   let cls = 'lesson-node';
@@ -207,19 +225,40 @@ function renderNode(day, indexInUnit, unit, completed, currentDay) {
   else if (isDone) content = icons.check(22, 'currentColor');
   else content = `<span class="font-bold">${day}</span>`;
 
-  const label = isCurrent ? 'COMMENCER' : isLocked ? '' : isDone ? 'Terminé' : `Jour ${day}`;
+  const labelStart = t('learn.startCta');
+
+  // Tooltip texte si terminé
+  const tooltipTitle = isPerfect
+    ? t('learn.perfect')
+    : isDone
+      ? t('learn.completed')
+      : isCurrent
+        ? labelStart
+        : '';
 
   return `
     <div class="lesson-node-wrap" style="margin-left:${offsetReverse}px;">
-      ${isCurrent ? `<div class="lesson-node-cta">${label}</div>` : ''}
+      ${isCurrent ? `<div class="lesson-node-cta">${labelStart}</div>` : ''}
       <button class="${cls}"
               data-action="${isLocked ? 'lesson-locked' : 'lesson-start'}"
               data-day="${day}"
               style="--node-color: ${unit.color};"
-              ${isLocked ? 'disabled' : ''}>
+              ${isLocked ? 'disabled' : ''}
+              ${tooltipTitle ? `title="J${day} — ${tooltipTitle}"` : ''}>
         ${content}
       </button>
+      ${isDone ? renderStarBar(stars) : ''}
       <div class="lesson-node-day">J${day}</div>
+    </div>
+  `;
+}
+
+function renderStarBar(stars) {
+  return `
+    <div class="lesson-stars" aria-label="${stars} étoiles sur 3">
+      ${[1, 2, 3].map(n => `
+        <span class="lesson-star ${n <= stars ? 'is-on' : ''}">★</span>
+      `).join('')}
     </div>
   `;
 }
@@ -463,11 +502,11 @@ renderLearn.mount = () => {
   };
 
   // Tabs (event delegation propre)
-  TABS.forEach(t => {
-    document.querySelectorAll(`[data-action="tab-${t.id}"]`).forEach(el =>
+  getTabs().forEach(tab => {
+    document.querySelectorAll(`[data-action="tab-${tab.id}"]`).forEach(el =>
       el.addEventListener('click', () => {
-        if (activeTab === t.id) return;
-        activeTab = t.id;
+        if (activeTab === tab.id) return;
+        activeTab = tab.id;
         rerender();
       })
     );
