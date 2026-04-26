@@ -16,6 +16,7 @@ import { icons } from '../components/icons.js';
 import { mascot } from '../components/mascot.js';
 import { recorder } from '../services/recorder.js';
 import { t, setLang, getLang, LANGS_AVAILABLE } from '../i18n/index.js';
+import { PALETTES, DENSITIES, applyPalette, applyDensity, applyContrast } from '../theme.js';
 
 function sections() {
   return [
@@ -165,33 +166,74 @@ function renderLanguage() {
 
 function renderAppearance(prefs) {
   const theme = prefs.theme || 'auto';
+  const palette = prefs.palette || 'kivu';
+  const density = prefs.density || 'normal';
   return `
+    <!-- Theme -->
     <div class="card mb-md">
-      <div class="font-bold text-lg mb-sm">Thème</div>
+      <div class="font-bold text-lg mb-sm">${t('settings.theme.title')}</div>
       <div class="grid grid-3 mb-md theme-grid">
         ${[
-          { id: 'light', label: 'Clair',  preview: 'theme-preview--light' },
-          { id: 'dark',  label: 'Sombre', preview: 'theme-preview--dark' },
-          { id: 'auto',  label: 'Auto',   preview: 'theme-preview--auto' }
-        ].map(t => `
-          <button class="theme-card ${theme === t.id ? 'active' : ''}"
-                  data-action="set-theme" data-theme="${t.id}">
-            <div class="theme-preview ${t.preview}"></div>
-            <div class="font-semibold text-sm">${t.label}</div>
+          { id: 'light', label: t('settings.theme.light'), preview: 'theme-preview--light' },
+          { id: 'dark',  label: t('settings.theme.dark'),  preview: 'theme-preview--dark' },
+          { id: 'auto',  label: t('settings.theme.auto'),  preview: 'theme-preview--auto' }
+        ].map(opt => `
+          <button class="theme-card ${theme === opt.id ? 'active' : ''}"
+                  data-action="set-theme" data-theme="${opt.id}">
+            <div class="theme-preview ${opt.preview}"></div>
+            <div class="font-semibold text-sm">${opt.label}</div>
           </button>
         `).join('')}
       </div>
+    </div>
 
+    <!-- Palette de couleurs -->
+    <div class="card mb-md">
+      <div class="font-bold text-lg mb-xs">Couleur principale</div>
+      <div class="text-xs text-muted mb-sm">Personnalisez l'identité visuelle de KIVU.</div>
+      <div class="palette-grid">
+        ${PALETTES.map(p => `
+          <button class="palette-swatch ${palette === p.id ? 'active' : ''}"
+                  data-action="set-palette" data-id="${p.id}"
+                  aria-label="${p.name}">
+            <span class="palette-swatch__chip" style="background:${p.gradHero};">
+              ${palette === p.id ? icons.check(18, 'white') : ''}
+            </span>
+            <span class="palette-swatch__label">${p.emoji} ${p.name}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Densité d'affichage -->
+    <div class="card mb-md">
+      <div class="font-bold text-lg mb-xs">Densité d'affichage</div>
+      <div class="text-xs text-muted mb-sm">Quantité d'espace entre les éléments.</div>
+      <div class="density-grid">
+        ${DENSITIES.map(d => `
+          <button class="density-card ${density === d.id ? 'active' : ''}"
+                  data-action="set-density" data-id="${d.id}">
+            <div class="density-preview density-preview--${d.id}">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="font-semibold text-sm">${d.label}</div>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Reste : font size + animations + contrast -->
+    <div class="card mb-md">
       <div class="settings-row">
         <span class="settings-row__icon" style="color:var(--kivu-primary);">${icons.eye(20)}</span>
         <div class="settings-row__body">
-          <div class="font-semibold">Taille du texte</div>
+          <div class="font-semibold">${t('settings.fontSize')}</div>
           <div class="text-xs text-muted">${(prefs.fontSize || 1).toFixed(2)}×</div>
         </div>
         <input type="range" min="0.85" max="1.5" step="0.05"
                value="${prefs.fontSize || 1}"
                class="a11y-slider"
-               data-action="set-font-size" aria-label="Taille du texte"/>
+               data-action="set-font-size" aria-label="${t('settings.fontSize')}"/>
       </div>
 
       <div class="settings-row">
@@ -310,6 +352,12 @@ function renderAccount() {
           </select>
         </label>
       </div>
+    </div>
+
+    <div class="card mb-md">
+      <button class="btn btn-ghost btn-full" data-action="logout">
+        ${icons.arrowLeft(16)} Se déconnecter
+      </button>
     </div>
 
     <div class="card mb-md" style="border:1px solid rgba(235,77,77,0.25);">
@@ -533,6 +581,32 @@ renderSettings.mount = () => {
     })
   );
 
+  // Palette swatches
+  document.querySelectorAll('[data-action="set-palette"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const prefs = store.get('preferences') || {};
+      store.set('preferences', { ...prefs, palette: id });
+      applyPalette(id);
+      const p = PALETTES.find(x => x.id === id);
+      if (window.__KIVU__?.toast && p) {
+        window.__KIVU__.toast(`Palette : ${p.name}`, { type: 'success', duration: 1400 });
+      }
+      rerender();
+    })
+  );
+
+  // Density cards
+  document.querySelectorAll('[data-action="set-density"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const prefs = store.get('preferences') || {};
+      store.set('preferences', { ...prefs, density: id });
+      applyDensity(id);
+      rerender();
+    })
+  );
+
   // UI language
   document.querySelectorAll('[data-action="set-ui-lang"]').forEach(btn =>
     btn.addEventListener('click', () => {
@@ -572,6 +646,9 @@ renderSettings.mount = () => {
       const last = path[path.length - 1];
       cursor[last] = !cursor[last];
       store.set('preferences', next);
+      // Side effects for known keys
+      if (key === 'highContrast') applyContrast(cursor[last]);
+      if (key === 'reducedMotion') document.documentElement.dataset.reducedMotion = cursor[last] ? 'true' : 'false';
       rerender();
     })
   );
@@ -587,17 +664,21 @@ renderSettings.mount = () => {
     })
   );
 
-  // Plan selection
+  // Plan selection — paid plans go to /checkout, free goes back instantly
   document.querySelectorAll('[data-action="select-plan"]').forEach(btn =>
     btn.addEventListener('click', () => {
       const plan = btn.dataset.plan;
-      const u = store.get('user');
-      store.set('user', { ...u, subscription: plan });
-      if (window.__KIVU__?.toast) {
-        const planName = PLANS.find(p => p.id === plan)?.name || plan;
-        window.__KIVU__.toast(`Bienvenue dans ${planName} ! 🎉`, { type: 'success' });
+      if (plan === 'free') {
+        const u = store.get('user');
+        store.set('user', { ...u, subscription: 'free' });
+        if (window.__KIVU__?.toast) {
+          window.__KIVU__.toast('Plan KIVU Free activé', { type: 'info' });
+        }
+        rerender();
+      } else {
+        // Paid plan → checkout flow
+        location.hash = '#/checkout/' + plan;
       }
-      rerender();
     })
   );
 
@@ -614,6 +695,18 @@ renderSettings.mount = () => {
       if (!confirm('Réinitialiser votre compte ? Cette action est irréversible.')) return;
       store.reset();
       if (window.__KIVU__?.toast) window.__KIVU__.toast('Compte réinitialisé', { type: 'info' });
+    })
+  );
+
+  // Logout
+  document.querySelectorAll('[data-action="logout"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      if (!confirm('Se déconnecter ?')) return;
+      localStorage.removeItem('kivu.token');
+      store.set('authToken', null);
+      store.set('onboardingCompleted', false);
+      if (window.__KIVU__?.toast) window.__KIVU__.toast('Déconnecté', { type: 'info' });
+      setTimeout(() => location.hash = '#/login', 100);
     })
   );
 

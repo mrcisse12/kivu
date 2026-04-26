@@ -39,6 +39,8 @@ const defaultState = {
     highContrast: false,
     offlineOnly: false
   },
+  // Authentification
+  authToken: null,
   // Progrès leçons style Duolingo
   lessons: {
     targetLang: 'swa',

@@ -98,16 +98,15 @@ renderOnboarding.mount = () => {
         currentPage++;
         rerender();
       } else {
-        store.set('onboardingCompleted', true);
-        navigate('/');
+        // Last step → redirect to /login (user can also skip into the app)
+        navigate('/login');
       }
     })
   );
 
   document.querySelectorAll('[data-action="onboarding-skip"]').forEach(btn =>
     btn.addEventListener('click', () => {
-      store.set('onboardingCompleted', true);
-      navigate('/');
+      navigate('/login');
     })
   );
 

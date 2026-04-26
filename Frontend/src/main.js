@@ -19,11 +19,14 @@ import { renderOnboarding } from './pages/onboarding.js';
 import { renderLessonPlayer } from './pages/lesson-player.js';
 import { renderRadio } from './pages/radio.js';
 import { renderDictionary } from './pages/dictionary.js';
+import { renderLogin } from './pages/login.js';
+import { renderCheckout } from './pages/checkout.js';
 import { renderStories } from './pages/stories.js';
 import { renderStoryPlayer } from './pages/story-player.js';
 import { setupInstallBanner } from './components/install-banner.js';
 import { setupMascotTracker } from './components/mascot-tracker.js';
 import { initI18n, onLangChange } from './i18n/index.js';
+import { applyPalette, applyDensity, applyContrast } from './theme.js';
 import { renderBottomNav } from './components/bottom-nav.js';
 import { renderDesktopNav } from './components/desktop-nav.js';
 import { store } from './store.js';
@@ -44,6 +47,7 @@ const routes = {
   '/radio': renderRadio,
   '/stories': renderStories,
   '/dictionary': renderDictionary,
+  '/login': renderLogin,
   '/onboarding': renderOnboarding
 };
 
@@ -72,10 +76,21 @@ function render() {
     return;
   }
 
+  // Checkout route: /checkout/<plan-id>
+  if (path.startsWith('/checkout/')) {
+    app.innerHTML = `
+      ${renderDesktopNav(path)}
+      <main class="screen animate-slide-up">${renderCheckout()}</main>
+    `;
+    if (renderCheckout.mount) renderCheckout.mount();
+    return;
+  }
+
   const renderFn = routes[path] || renderHome;
   const screenHTML = renderFn();
-  const navHTML = path === '/onboarding' ? '' : renderBottomNav(path);
-  const sideHTML = path === '/onboarding' ? '' : renderDesktopNav(path);
+  const isFullScreen = path === '/onboarding' || path === '/login';
+  const navHTML = isFullScreen ? '' : renderBottomNav(path);
+  const sideHTML = isFullScreen ? '' : renderDesktopNav(path);
 
   app.innerHTML = `
     ${sideHTML}
@@ -91,10 +106,13 @@ function render() {
 router.onChange(render);
 store.subscribe(render);
 
-// Apply persisted theme + i18n + font-size BEFORE first paint
+// Apply persisted theme + i18n + palette + density BEFORE first paint
 (() => {
   const prefs = store.get('preferences') || {};
   applyTheme(prefs.theme || 'auto');
+  applyPalette(prefs.palette || 'kivu');
+  applyDensity(prefs.density || 'normal');
+  applyContrast(!!prefs.highContrast);
   initI18n(prefs.uiLang || 'fr');
   // Re-render the whole app when UI language changes
   onLangChange(() => render());
