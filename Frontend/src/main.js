@@ -18,6 +18,7 @@ import { renderSettings, applyTheme } from './pages/settings.js';
 import { renderOnboarding } from './pages/onboarding.js';
 import { renderLessonPlayer } from './pages/lesson-player.js';
 import { renderRadio } from './pages/radio.js';
+import { renderDictionary } from './pages/dictionary.js';
 import { renderStories } from './pages/stories.js';
 import { renderStoryPlayer } from './pages/story-player.js';
 import { setupInstallBanner } from './components/install-banner.js';
@@ -42,6 +43,7 @@ const routes = {
   '/settings': renderSettings,
   '/radio': renderRadio,
   '/stories': renderStories,
+  '/dictionary': renderDictionary,
   '/onboarding': renderOnboarding
 };
 

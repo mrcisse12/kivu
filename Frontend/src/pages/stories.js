@@ -9,6 +9,7 @@ import { navigate } from '../router.js';
 import { icons } from '../components/icons.js';
 import { mascot } from '../components/mascot.js';
 import { STORIES } from '../data/stories.js';
+import { t } from '../i18n/index.js';
 
 export function renderStories() {
   const completed = (store.get('stories') || {}).completed || [];
@@ -16,8 +17,8 @@ export function renderStories() {
   return `
     <div class="screen-header">
       <div>
-        <div class="screen-title">Stories</div>
-        <div class="screen-subtitle">Plonge dans des histoires réelles, en langue cible</div>
+        <div class="screen-title">${t('stories.title')}</div>
+        <div class="screen-subtitle">${t('stories.subtitle')}</div>
       </div>
     </div>
 
@@ -25,12 +26,12 @@ export function renderStories() {
     <div class="card mascot-greeting mb-md">
       <div class="mascot-greeting__avatar">${mascot.thinking(80)}</div>
       <div class="mascot-greeting__body">
-        <div class="font-bold">Histoires africaines</div>
-        <div class="text-xs text-muted">Contes ancestraux, vie quotidienne, sagesse — chaque histoire enseigne sans en avoir l'air.</div>
+        <div class="font-bold">${t('stories.intro')}</div>
+        <div class="text-xs text-muted">${t('stories.introSub')}</div>
       </div>
     </div>
 
-    <h2 class="font-display font-bold text-lg mb-sm">Catalogue</h2>
+    <h2 class="font-display font-bold text-lg mb-sm">${t('stories.catalog')}</h2>
     <div class="grid grid-2 mb-lg story-grid">
       ${STORIES.map(s => renderStoryCard(s, completed.includes(s.id))).join('')}
     </div>

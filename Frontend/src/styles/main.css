@@ -2976,6 +2976,153 @@ html[data-theme="dark"] .lang-card.active { background: rgba(51, 149, 218, 0.15)
 input.btn, select.btn, textarea.btn { border-bottom-width: 1.5px !important; text-transform: none !important; }
 
 /* ===========================================================
+   Dictionnaire visuel
+   =========================================================== */
+.dict-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--divider);
+  background: var(--surface);
+}
+.dict-search__icon {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  display: inline-flex;
+}
+.dict-search__input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: var(--text-primary);
+  padding: 8px 0;
+}
+.dict-search__input::placeholder { color: var(--text-tertiary); }
+.dict-search__clear {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 0;
+}
+.dict-search__clear:hover { background: var(--divider); }
+
+.dict-grid { gap: 10px; }
+.dict-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 8px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  border: 2px solid var(--divider);
+  border-bottom: 4px solid var(--divider);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  transition: all 0.18s var(--ease-spring);
+}
+.dict-tile:hover {
+  border-color: var(--kivu-primary);
+  border-bottom-color: var(--kivu-primary);
+  transform: translateY(-2px);
+}
+.dict-tile:active { transform: translateY(2px); border-bottom-width: 2px; margin-top: 2px; }
+.dict-tile__emoji {
+  font-size: 36px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.dict-tile__fr {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+.dict-tile__hint { color: var(--text-secondary); font-style: italic; font-weight: 400; }
+
+/* Detail modal */
+.dict-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 32, 58, 0.55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 200;
+  animation: fadeIn 0.18s ease;
+}
+.dict-modal {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 24px 20px;
+  box-shadow: 0 24px 64px rgba(20, 32, 58, 0.30);
+  animation: scaleIn 0.22s var(--ease-spring);
+}
+.dict-modal__close {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+}
+.dict-modal__hero {
+  text-align: center;
+  margin-bottom: 18px;
+}
+.dict-modal__emoji {
+  font-size: 80px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.dict-translations {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.dict-trans-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: 12px;
+}
+.dict-trans-flag { font-size: 24px; line-height: 1; flex-shrink: 0; }
+.dict-trans-body { flex: 1; min-width: 0; }
+.dict-modal__foot {
+  margin-top: 8px;
+}
+
+html[data-theme="dark"] .dict-tile { background: var(--surface-elevated); }
+html[data-theme="dark"] .dict-trans-row { background: var(--surface-elevated); }
+html[data-theme="dark"] .dict-search { background: var(--surface-elevated); border-color: var(--divider); }
+html[data-theme="dark"] .dict-modal { background: var(--surface-elevated); }
+
+/* ===========================================================
    DUOLINGO DESIGN OVERHAUL (priority overrides)
    - Boutons "jouet" pseudo-3D
    - Couleurs flat saturées

@@ -13,6 +13,7 @@ import { icons } from '../components/icons.js';
 import { mascot } from '../components/mascot.js';
 import { speech } from '../services/speech.js';
 import { getStory } from '../data/stories.js';
+import { t } from '../i18n/index.js';
 
 let storyId = null;
 let chapterIdx = 0;
@@ -73,7 +74,7 @@ function renderPlayLine(story, chapter) {
           <div class="lesson-progress__fill" style="width:${chapterProgress(story)}%;"></div>
         </div>
         <div class="story-chapter-label">
-          Ch. ${chapterIdx + 1}/${story.chapters.length}
+          ${t('stories.chapter', { n: chapterIdx + 1, total: story.chapters.length })}
         </div>
       </header>
 
@@ -95,7 +96,7 @@ function renderPlayLine(story, chapter) {
             ${icons.speaker(18)}
           </button>
           <button class="btn btn-primary btn-full" data-action="story-next">
-            ${lineIdx === chapter.lines.length - 1 ? 'Question' : 'Suivant'}
+            ${lineIdx === chapter.lines.length - 1 ? t('stories.question') : t('common.next')}
           </button>
         </div>
       </footer>
@@ -138,7 +139,7 @@ function renderQuestion(story, chapter) {
         <div class="lesson-progress">
           <div class="lesson-progress__fill" style="width:${chapterProgress(story)}%;"></div>
         </div>
-        <div class="story-chapter-label">Question</div>
+        <div class="story-chapter-label">${t('stories.question')}</div>
       </header>
 
       <main class="story-question-stage">
@@ -176,7 +177,7 @@ function renderQuestion(story, chapter) {
 
 function renderQuestionFoot(q, story) {
   if (answer == null) {
-    return `<div class="text-xs text-muted">Choisissez une réponse</div>`;
+    return `<div class="text-xs text-muted">${t('stories.questionPick')}</div>`;
   }
   const correct = answer === q.correct;
   const isLastChapter = chapterIdx === story.chapters.length - 1;
@@ -184,12 +185,12 @@ function renderQuestionFoot(q, story) {
     <div class="lesson-foot__feedback">
       <span class="lesson-foot__mascot">${mascot[correct ? 'cheering' : 'sad'](64)}</span>
       <div class="lesson-foot__text">
-        <div class="font-bold">${correct ? 'Excellent !' : 'Pas tout à fait.'}</div>
-        ${!correct ? `<div class="text-sm">Bonne réponse : <strong>${escapeHtml(q.correct)}</strong></div>` : '<div class="text-sm">+10 XP</div>'}
+        <div class="font-bold">${correct ? t('lesson.excellent') : t('lesson.notQuite')}</div>
+        ${!correct ? `<div class="text-sm">${t('lesson.goodAnswer')} <strong>${escapeHtml(q.correct)}</strong></div>` : '<div class="text-sm">+10 XP</div>'}
       </div>
     </div>
     <button class="btn btn-primary btn-full mt-sm" data-action="story-after-question">
-      ${isLastChapter ? 'Terminer' : 'Chapitre suivant'}
+      ${isLastChapter ? t('stories.finish') : t('stories.nextChapter')}
     </button>
   `;
 }
@@ -209,32 +210,32 @@ function renderDone(story) {
       <main class="lesson-body lesson-completion">
         <div class="lesson-completion__mascot">${mascot[mistakes === 0 ? 'cheering' : 'happy'](150)}</div>
         <h2 class="font-display font-bold" style="font-size:32px;">
-          Histoire terminée !
+          ${t('stories.storyDoneTitle')}
         </h2>
         <div class="text-sm text-muted">${escapeHtml(story.title)}</div>
-        <div class="text-sm text-muted mt-xs">${correct} / ${total} bonnes réponses</div>
+        <div class="text-sm text-muted mt-xs">${t('lesson.correctAnswers', { n: correct, total })}</div>
 
         <div class="lesson-rewards">
           <div class="reward-card">
-            <div class="reward-icon" style="background:rgba(255,150,0,0.15); color:var(--duo-orange-dk);">⭐</div>
+            <div class="reward-icon" style="background:rgba(255,150,0,0.15); color:#E08600;">⭐</div>
             <div class="font-bold text-lg">+${xp}</div>
-            <div class="text-xs text-muted">XP gagnés</div>
+            <div class="text-xs text-muted">${t('lesson.xpEarned')}</div>
           </div>
           <div class="reward-card">
-            <div class="reward-icon" style="background:rgba(28,176,246,0.15); color:var(--duo-blue);">📚</div>
+            <div class="reward-icon" style="background:rgba(28,176,246,0.15); color:#1CB0F6;">📚</div>
             <div class="font-bold text-lg">${total}</div>
-            <div class="text-xs text-muted">Chapitres lus</div>
+            <div class="text-xs text-muted">${t('stories.chaptersRead')}</div>
           </div>
           ${mistakes === 0 ? `
             <div class="reward-card">
-              <div class="reward-icon" style="background:rgba(206,130,255,0.15); color:var(--duo-purple-dk);">💎</div>
+              <div class="reward-icon" style="background:rgba(206,130,255,0.15); color:#8C40AD;">💎</div>
               <div class="font-bold text-lg">+20</div>
-              <div class="text-xs text-muted">Bonus parfait</div>
+              <div class="text-xs text-muted">${t('lesson.perfectBonus')}</div>
             </div>` : ''}
         </div>
       </main>
       <footer class="story-foot">
-        <button class="btn btn-primary btn-full" data-action="story-finish">Retour aux Stories</button>
+        <button class="btn btn-primary btn-full" data-action="story-finish">${t('stories.backToStories')}</button>
       </footer>
     </div>
   `;
