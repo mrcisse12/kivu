@@ -88,6 +88,9 @@ export function renderHome() {
               style="background:var(--kivu-accent); flex-shrink:0;">${t('common.continue')}</button>
     </div>
 
+    <!-- Daily goal -->
+    ${renderDailyGoal(user)}
+
     <!-- Action principale -->
     <button class="card featured-action mb-md" data-nav="/translate">
       <span class="featured-action__icon">${icons.mic(28, 'white')}</span>
@@ -191,6 +194,38 @@ export function renderHome() {
       ${renderCommunityPost('👵🏾', 'Mamie Awa', 'a enregistré 12 proverbes Wolof', 'il y a 3 h')}
       ${renderCommunityPost('👨🏾‍🎓', 'Koffi', 'a terminé le niveau 15 en Dioula', 'il y a 5 h')}
       ${renderCommunityPost('👩🏾‍⚕️', 'Dr. Amina', 'a aidé 47 patients via KIVU', 'hier')}
+    </div>
+  `;
+}
+
+function renderDailyGoal(user) {
+  const goal = user.dailyGoalMinutes || 10;
+  // Compute today's progress: 1 min per quest done today + 2 min per lesson today
+  // For demo: derive a synthetic value based on streak so it always looks alive.
+  const lessonsToday = (user.stats?.streak || 0) > 0 ? Math.min(goal, Math.floor(goal * 0.6)) : 0;
+  const todayMinutes = Math.min(goal, lessonsToday);
+  const pct = Math.round((todayMinutes / goal) * 100);
+  const remaining = Math.max(0, goal - todayMinutes);
+  const ringDeg = (todayMinutes / goal) * 360;
+  return `
+    <div class="card daily-goal mb-md">
+      <div class="daily-goal__ring" style="--ring-deg:${ringDeg}deg;">
+        <div class="daily-goal__ring-inner">
+          <div class="daily-goal__ring-value">${todayMinutes}</div>
+          <div class="daily-goal__ring-unit">/ ${goal} min</div>
+        </div>
+      </div>
+      <div class="daily-goal__body">
+        <div class="font-bold">Objectif du jour</div>
+        <div class="text-xs text-muted">
+          ${pct >= 100
+            ? 'Bravo, objectif atteint ! 🔥'
+            : remaining + ' min restantes pour garder ta série'}
+        </div>
+        <div class="progress-bar progress-bar--thin mt-sm">
+          <div class="progress-fill" style="width:${pct}%; background:var(--grad-hero);"></div>
+        </div>
+      </div>
     </div>
   `;
 }

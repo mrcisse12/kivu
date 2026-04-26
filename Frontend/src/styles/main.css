@@ -3546,6 +3546,423 @@ html[data-theme="dark"] .checkout-method { background: var(--surface-elevated); 
 html[data-theme="dark"] .checkout-method.active { background: rgba(51, 149, 218, 0.10); }
 
 /* ===========================================================
+   Onboarding v2 — interactive setup
+   =========================================================== */
+.onboarding-v2 {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px max(20px, env(safe-area-inset-bottom));
+  color: white;
+  overflow: hidden;
+  z-index: 50;
+}
+.onboarding-v2.onb-bg-grad-hero    { background: var(--grad-hero); }
+.onboarding-v2.onb-bg-grad-sunset  { background: var(--grad-sunset); }
+.onboarding-v2.onb-bg-grad-savanna { background: var(--grad-savanna); }
+.onboarding-v2.onb-bg-grad-royal   { background: var(--grad-royal); }
+
+.onb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 1;
+}
+.onb-back {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  cursor: pointer;
+}
+.onb-progress {
+  flex: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  overflow: hidden;
+  max-width: 320px;
+  margin: 0 auto;
+}
+.onb-progress__fill {
+  height: 100%;
+  background: white;
+  border-radius: 999px;
+  transition: width 0.4s var(--ease-spring);
+}
+.onb-brand {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-size: 18px;
+}
+.onb-skip {
+  background: transparent;
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+}
+
+.onb-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px 4px 16px;
+  z-index: 1;
+  overflow-y: auto;
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.onb-mascot {
+  width: 180px; height: 220px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.onb-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 28px;
+  margin: 12px 0 8px;
+  line-height: 1.2;
+}
+.onb-sub {
+  font-size: 15px;
+  opacity: 0.95;
+  line-height: 1.5;
+  margin: 0 0 24px;
+  max-width: 340px;
+}
+.onb-question {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  margin: 0 0 6px;
+  line-height: 1.3;
+  text-align: center;
+}
+.onb-question-sub {
+  font-size: 13px;
+  opacity: 0.92;
+  margin: 0 0 18px;
+  text-align: center;
+}
+
+.onb-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+}
+.onb-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 800;
+}
+.onb-link {
+  color: white;
+  background: transparent;
+  border: 0;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 10px;
+  font-size: 13px;
+}
+
+/* ===========================================================
+   Choice cards (motivation, level)
+   =========================================================== */
+.choice-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+@media (min-width: 480px) { .choice-grid { grid-template-columns: 1fr 1fr; } }
+.choice-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.30);
+  border-bottom: 4px solid rgba(255, 255, 255, 0.30);
+  border-radius: 16px;
+  color: white;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.18s var(--ease-spring);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.choice-card:hover { transform: translateY(-1px); background: rgba(255,255,255,0.28); }
+.choice-card.active {
+  background: white;
+  color: var(--text-primary);
+  border-color: white;
+  border-bottom-color: rgba(0,0,0,0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.20);
+}
+.choice-card__emoji {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+.choice-card.active .choice-card__emoji { background: rgba(0, 0, 0, 0.06); }
+.choice-card__body { flex: 1; min-width: 0; }
+.choice-card__check {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--success);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.choice-card.active .choice-card__check { display: inline-flex; }
+
+/* ===========================================================
+   Target language grid
+   =========================================================== */
+.lang-target-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+@media (min-width: 480px) { .lang-target-grid { grid-template-columns: repeat(3, 1fr); } }
+.lang-target-card {
+  position: relative;
+  background: var(--card-grad, rgba(255,255,255,0.18));
+  border: 2px solid rgba(255, 255, 255, 0.30);
+  border-bottom: 4px solid rgba(255, 255, 255, 0.30);
+  border-radius: 16px;
+  padding: 14px 12px;
+  color: white;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.18s var(--ease-spring);
+}
+.lang-target-card:hover { transform: translateY(-2px); }
+.lang-target-card.active {
+  border-color: white;
+  border-bottom-color: rgba(0, 0, 0, 0.30);
+  box-shadow: 0 0 0 4px white, 0 8px 24px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2px);
+}
+.lang-target-card__flag {
+  font-size: 36px;
+  line-height: 1;
+  display: block;
+  margin-bottom: 6px;
+}
+.lang-target-card__body { line-height: 1.3; }
+.lang-target-card__speakers {
+  margin-top: 6px;
+  opacity: 0.85;
+  font-weight: 600;
+}
+.lang-target-card__check {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--success);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===========================================================
+   Level cards
+   =========================================================== */
+.level-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+.level-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.30);
+  border-bottom: 4px solid rgba(255, 255, 255, 0.30);
+  border-radius: 16px;
+  color: white;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.18s var(--ease-spring);
+}
+.level-card:hover { transform: translateY(-1px); }
+.level-card.active {
+  background: white;
+  color: var(--text-primary);
+  border-color: white;
+  border-bottom-color: rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.20);
+}
+.level-card__emoji { font-size: 36px; line-height: 1; }
+.level-card__body { flex: 1; }
+
+/* ===========================================================
+   Goal cards
+   =========================================================== */
+.goal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+@media (min-width: 480px) { .goal-grid { grid-template-columns: repeat(4, 1fr); } }
+.goal-card {
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.30);
+  border-bottom: 4px solid rgba(255, 255, 255, 0.30);
+  border-radius: 16px;
+  padding: 14px 8px;
+  color: white;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.18s var(--ease-spring);
+}
+.goal-card:hover { transform: translateY(-2px); }
+.goal-card.active {
+  background: white;
+  color: var(--text-primary);
+  border-color: white;
+  border-bottom-color: rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.20);
+}
+.goal-card__icon { font-size: 28px; margin-bottom: 4px; }
+.goal-card__minutes {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+}
+
+/* ===========================================================
+   Onboarding summary
+   =========================================================== */
+.onb-summary {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.20);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.onb-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+.onb-summary-emoji {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.onb-summary-label {
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+/* ===========================================================
+   Daily goal ring (home)
+   =========================================================== */
+.daily-goal {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+}
+.daily-goal__ring {
+  --ring-deg: 0deg;
+  width: 84px; height: 84px;
+  border-radius: 50%;
+  background:
+    conic-gradient(var(--kivu-accent) var(--ring-deg), rgba(0, 0, 0, 0.08) var(--ring-deg));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.5s var(--ease);
+}
+html[data-theme="dark"] .daily-goal__ring {
+  background:
+    conic-gradient(var(--kivu-accent) var(--ring-deg), rgba(255, 255, 255, 0.08) var(--ring-deg));
+}
+.daily-goal__ring-inner {
+  width: 68px; height: 68px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.daily-goal__ring-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--text-primary);
+  line-height: 1;
+}
+.daily-goal__ring-unit {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-top: 2px;
+}
+.daily-goal__body { flex: 1; min-width: 0; }
+
+/* ===========================================================
    DUOLINGO DESIGN OVERHAUL (priority overrides)
    - Boutons "jouet" pseudo-3D
    - Couleurs flat saturées
