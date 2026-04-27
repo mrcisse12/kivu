@@ -5748,3 +5748,45 @@ body.in-meeting main.screen {
   background: rgba(255,75,75,.08);
   border: 1.5px solid rgba(255,75,75,.25);
 }
+
+/* ===========================================================
+   Word of the Day card (home)
+   =========================================================== */
+.wotd-card {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 16px;
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+.wotd-card:active { transform: scale(0.985); }
+.wotd-emoji {
+  font-size: 52px;
+  width: 68px; height: 68px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+}
+
+/* ===========================================================
+   Settings daily goal slider
+   =========================================================== */
+.goal-slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.goal-slider-wrap input[type=range] {
+  flex: 1;
+  accent-color: var(--kivu-accent);
+}
+.goal-slider-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--kivu-accent);
+  min-width: 52px;
+  text-align: right;
+}

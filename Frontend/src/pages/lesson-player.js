@@ -503,40 +503,105 @@ function loseHeart() {
 
 function finishLesson() {
   isFinished = true;
+
+  // Snapshot BEFORE updating — for badge diff
+  const oldState = store.get();
+
+  /* ── 1. Lesson progress ─────────────────────────────────── */
   const lessons = store.get('lessons') || {};
   const completed = [...(lessons.completed || [])];
   const already = completed.find(c => c.id === currentLesson.id);
   const score = currentLesson.exercises.length - mistakes;
   const perfect = mistakes === 0;
+  const today = new Date().toISOString().slice(0, 10);
+
   if (already) {
     already.score = Math.max(already.score || 0, score);
     already.total = currentLesson.exercises.length;
     already.perfect = already.perfect || perfect;
+    already.date = already.date || new Date().toISOString(); // keep original date
   } else {
     completed.push({
       id: currentLesson.id,
       score,
       total: currentLesson.exercises.length,
       perfect,
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
+      targetLang: lessons.targetLang || 'swa'
     });
   }
   const newCurrentDay = Math.max(lessons.currentDay || 1, currentLesson.day + 1);
   store.set('lessons', { ...lessons, completed, currentDay: newCurrentDay });
 
-  // XP for user
+  /* ── 2. User stats ──────────────────────────────────────── */
   const u = store.get('user');
   const xpGain = currentLesson.xpReward + (perfect ? 5 : 0);
+
+  // Streak tracking
+  const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+  const last = u.stats.lastPlayedDate || '';
+  let newStreak = u.stats.streak || 0;
+  if (last !== today) {
+    newStreak = last === yesterday ? newStreak + 1 : 1;
+  }
+
+  // Level-up
+  let newXP = (u.stats.xp || 0) + xpGain;
+  let newLevel = u.stats.level || 1;
+  let newNextLevelXP = u.stats.nextLevelXP || 500;
+  let leveledUp = false;
+  while (newXP >= newNextLevelXP) {
+    newLevel++;
+    newNextLevelXP = Math.ceil(newNextLevelXP * 1.45 / 100) * 100; // scale 45%, round to 100
+    leveledUp = true;
+  }
+
   store.set('user', {
     ...u,
     stats: {
       ...u.stats,
-      xp: u.stats.xp + xpGain,
-      wordsLearned: u.stats.wordsLearned + score
+      xp: newXP,
+      level: newLevel,
+      nextLevelXP: newNextLevelXP,
+      streak: newStreak,
+      lastPlayedDate: today,
+      wordsLearned: (u.stats.wordsLearned || 0) + score
     }
   });
 
-  // re-render
+  /* ── 3. Toasts ──────────────────────────────────────────── */
+  if (leveledUp && window.__KIVU__?.toast) {
+    setTimeout(() => window.__KIVU__.toast(`🎉 Niveau ${newLevel} atteint !`, { type: 'success', duration: 3500 }), 600);
+  }
+
+  // Badge unlock notifications
+  const newState = store.get();
+  const BADGE_CHECK = [
+    { id: 'first_lesson',   label: '🎓 Premier pas — 1ère leçon !',    cond: s => (s.lessons?.completed?.length || 0) >= 1 },
+    { id: 'perfect_lesson', label: '💎 Perfection — leçon sans faute !', cond: s => (s.lessons?.completed || []).some(c => c.perfect) },
+    { id: 'lessons_10',     label: '📚 Studieux — 10 leçons finies !',   cond: s => (s.lessons?.completed?.length || 0) >= 10 },
+    { id: 'lessons_30',     label: '🏆 Champion — 30 leçons finies !',   cond: s => (s.lessons?.completed?.length || 0) >= 30 },
+    { id: 'streak_3',       label: '🔥 Flamme — 3 jours de suite !',     cond: s => (s.user?.stats?.streak || 0) >= 3 },
+    { id: 'streak_7',       label: '🔥 Feu sacré — 7 jours de suite !',  cond: s => (s.user?.stats?.streak || 0) >= 7 },
+    { id: 'streak_30',      label: '🌟 Incandescent — 30 jours !',       cond: s => (s.user?.stats?.streak || 0) >= 30 },
+    { id: 'xp_500',         label: '⚡ Étincelle — 500 XP !',            cond: s => (s.user?.stats?.xp || 0) >= 500 },
+    { id: 'xp_5000',        label: '⚡ Énergie — 5 000 XP !',            cond: s => (s.user?.stats?.xp || 0) >= 5000 },
+    { id: 'level_5',        label: '🚀 Lancé — Niveau 5 !',              cond: s => (s.user?.stats?.level || 1) >= 5 },
+    { id: 'level_10',       label: '🌍 Africain — Niveau 10 !',          cond: s => (s.user?.stats?.level || 1) >= 10 },
+  ];
+  let badgeDelay = leveledUp ? 4200 : 900;
+  BADGE_CHECK.forEach(b => {
+    if (!b.cond(oldState) && b.cond(newState)) {
+      setTimeout(() => {
+        if (window.__KIVU__?.toast) {
+          window.__KIVU__.toast(`Badge débloqué : ${b.label}`, { type: 'success', duration: 3000 });
+        }
+      }, badgeDelay);
+      badgeDelay += 2200;
+    }
+  });
+
+  /* ── 4. Re-render ───────────────────────────────────────── */
   const main = document.querySelector('main.screen');
   if (main) main.innerHTML = renderLessonPlayer();
   renderLessonPlayer.mount();

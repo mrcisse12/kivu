@@ -634,6 +634,11 @@ renderTranslate.mount = () => {
       const result = await api.translate(sourceText, sourceLanguage, targetLanguage);
       translation = result;
       isTranslating = false;
+      // Track translation count for badges / profile
+      store.update('user', u => ({
+        ...u,
+        stats: { ...u.stats, translationsCount: (u.stats.translationsCount || 0) + 1 }
+      }));
       rerender();
       // Auto-speak the translation
       if (speech.ttsSupported) {

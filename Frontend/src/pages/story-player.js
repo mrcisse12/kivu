@@ -358,19 +358,57 @@ renderStoryPlayer.mount = () => {
 
 function finishStory(story) {
   mode = 'done';
-  // Persist
+
+  // Persist story completion (also update storiesProgress for badge compatibility)
   const stories = store.get('stories') || { completed: [] };
+  const storiesProgress = store.get('storiesProgress') || { completed: [] };
   if (!stories.completed.includes(story.id)) {
     stories.completed = [...stories.completed, story.id];
     store.set('stories', stories);
   }
-  // XP for user
+  if (!storiesProgress.completed?.includes(story.id)) {
+    store.set('storiesProgress', {
+      ...storiesProgress,
+      completed: [...(storiesProgress.completed || []), story.id]
+    });
+  }
+
+  // XP + streak + level-up (same logic as lesson-player)
   const u = store.get('user');
   const xpGain = story.xp + (mistakes === 0 ? 20 : 0);
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+  const last = u.stats.lastPlayedDate || '';
+  let newStreak = u.stats.streak || 0;
+  if (last !== today) {
+    newStreak = last === yesterday ? newStreak + 1 : 1;
+  }
+
+  let newXP = (u.stats.xp || 0) + xpGain;
+  let newLevel = u.stats.level || 1;
+  let newNextLevelXP = u.stats.nextLevelXP || 500;
+  let leveledUp = false;
+  while (newXP >= newNextLevelXP) {
+    newLevel++;
+    newNextLevelXP = Math.ceil(newNextLevelXP * 1.45 / 100) * 100;
+    leveledUp = true;
+  }
+
   store.set('user', {
     ...u,
-    stats: { ...u.stats, xp: u.stats.xp + xpGain }
+    stats: {
+      ...u.stats,
+      xp: newXP,
+      level: newLevel,
+      nextLevelXP: newNextLevelXP,
+      streak: newStreak,
+      lastPlayedDate: today
+    }
   });
+
+  if (leveledUp && window.__KIVU__?.toast) {
+    setTimeout(() => window.__KIVU__.toast(`🎉 Niveau ${newLevel} atteint !`, { type: 'success', duration: 3500 }), 600);
+  }
 
   const main = document.querySelector('main.screen');
   if (main) main.innerHTML = renderStoryPlayer();

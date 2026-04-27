@@ -1,7 +1,9 @@
 import { store } from '../store.js';
 import { LANGUAGES } from '../data/languages.js';
+import { ENTRIES } from '../data/dictionary.js';
 import { icons } from '../components/icons.js';
 import { mascot } from '../components/mascot.js';
+import { speech } from '../services/speech.js';
 import { t } from '../i18n/index.js';
 
 // Tuiles fonctionnalités — emojis catégorie autorisés (gamification visuelle)
@@ -170,6 +172,9 @@ export function renderHome() {
       </div>
     </div>
 
+    <!-- Mot du jour -->
+    ${renderWordOfDay()}
+
     <!-- Radio Kivi + Stories -->
     <div class="grid grid-2 mb-md">
       <button class="card radio-promo" data-nav="/radio" style="background:#1CB0F6; color:white; border-color:#1899D6; border-bottom-color:#1899D6;">
@@ -200,10 +205,13 @@ export function renderHome() {
 
 function renderDailyGoal(user) {
   const goal = user.dailyGoalMinutes || 10;
-  // Compute today's progress: 1 min per quest done today + 2 min per lesson today
-  // For demo: derive a synthetic value based on streak so it always looks alive.
-  const lessonsToday = (user.stats?.streak || 0) > 0 ? Math.min(goal, Math.floor(goal * 0.6)) : 0;
-  const todayMinutes = Math.min(goal, lessonsToday);
+  // Real computation: each completed lesson today ≈ 5 minutes
+  const today = new Date().toISOString().slice(0, 10);
+  const lessons = store.get('lessons') || {};
+  const lessonsToday = (lessons.completed || []).filter(c =>
+    (c.date || '').slice(0, 10) === today
+  ).length;
+  const todayMinutes = Math.min(goal, lessonsToday * 5);
   const pct = Math.round((todayMinutes / goal) * 100);
   const remaining = Math.max(0, goal - todayMinutes);
   const ringDeg = (todayMinutes / goal) * 360;
@@ -225,6 +233,45 @@ function renderDailyGoal(user) {
         <div class="progress-bar progress-bar--thin mt-sm">
           <div class="progress-fill" style="width:${pct}%; background:var(--grad-hero);"></div>
         </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderWordOfDay() {
+  // Pick a deterministic daily word (changes each day, same for whole day)
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86_400_000);
+  const entry = ENTRIES[dayOfYear % ENTRIES.length];
+  const user = store.get('user') || {};
+  const lang = user.preferredLanguage || 'swa';
+  // Show user's learning language translation + English
+  const LANG_NAMES_SHORT = { swa:'Swahili', wol:'Wolof', bam:'Bambara', hau:'Haoussa', yor:'Yoruba', zul:'Zulu', ibo:'Igbo', en:'Anglais', fra:'Français', dyu:'Dioula' };
+  const LANG_FLAGS_MAP = { swa:'🇹🇿', wol:'🇸🇳', bam:'🇲🇱', hau:'🇳🇬', yor:'🇳🇬', zul:'🇿🇦', ibo:'🇳🇬', en:'🇬🇧' };
+  const langCode = ['swa','wol','bam','hau','yor','zul','ibo'].includes(lang) ? lang : 'swa';
+  const translation = entry[langCode] || entry.swa;
+  const flag = LANG_FLAGS_MAP[langCode] || '🌍';
+  const langName = LANG_NAMES_SHORT[langCode] || 'Swahili';
+
+  return `
+    <div class="section-head mb-sm">
+      <h2 class="font-display font-bold text-lg">Mot du jour</h2>
+      <span class="chip chip-primary">📅 Quotidien</span>
+    </div>
+    <div class="card wotd-card mb-lg" data-action="wotd-speak"
+         style="background:linear-gradient(135deg, #1CB0F630 0%, #FF960010 100%); border-color: #1CB0F640; cursor:pointer;">
+      <div class="flex items-center gap-md">
+        <div class="wotd-emoji" aria-hidden="true">${entry.emoji}</div>
+        <div style="flex:1;">
+          <div class="font-display font-bold text-2xl">${entry.fr}</div>
+          <div class="text-sm text-muted mb-sm">${entry.en} <span class="text-tertiary">·</span> ${entry.category}</div>
+          <div class="flex gap-sm flex-wrap">
+            <span class="chip chip-primary">${flag} ${langName} : <strong>${translation}</strong></span>
+            ${entry.en !== translation ? `<span class="chip chip-ghost">🇬🇧 ${entry.en}</span>` : ''}
+          </div>
+        </div>
+        <button class="icon-btn" aria-label="Écouter la prononciation" style="flex-shrink:0;">
+          ${icons.speaker(20)}
+        </button>
       </div>
     </div>
   `;
@@ -279,6 +326,7 @@ function formatSpeakers(count) {
 }
 
 renderHome.mount = function afterHomeRender() {
+  // Animated counter
   document.querySelectorAll('[data-counter]').forEach(el => {
     const target = Number(el.dataset.counter);
     if (!Number.isFinite(target) || target <= 0) return;
@@ -292,5 +340,22 @@ renderHome.mount = function afterHomeRender() {
       if (t < 1) requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
+  });
+
+  // Word of the Day — speak on click
+  document.querySelectorAll('[data-action="wotd-speak"]').forEach(el => {
+    el.addEventListener('click', () => {
+      const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86_400_000);
+      const entry = ENTRIES[dayOfYear % ENTRIES.length];
+      const user = store.get('user') || {};
+      const lang = ['swa','wol','bam','hau','yor','zul','ibo'].includes(user.preferredLanguage) ? user.preferredLanguage : 'swa';
+      const word = entry[lang] || entry.swa;
+      // Try to import speech lazily to avoid circular dependency issues
+      if (speech.ttsSupported) {
+        speech.speak(word, lang);
+      } else if (window.__KIVU__?.toast) {
+        window.__KIVU__.toast(`${entry.fr} → ${word}`, { type: 'info', duration: 2500 });
+      }
+    });
   });
 };

@@ -21,6 +21,7 @@ const defaultState = {
       level: 8,
       nextLevelXP: 3600,
       streak: 12,
+      lastPlayedDate: '',   // ISO date YYYY-MM-DD of last lesson/story played
       wordsLearned: 47,
       badgesCount: 23,
       translationsCount: 147,

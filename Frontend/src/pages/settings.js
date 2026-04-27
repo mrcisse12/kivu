@@ -397,6 +397,17 @@ function renderNotifications(prefs) {
       <input type="time" class="form-input" value="${n.reminderTime || '19:00'}"
              data-action="set-reminder-time" style="max-width:160px;"/>
     </div>
+
+    <div class="card mb-md">
+      <div class="font-bold text-md mb-sm">⏱️ Objectif quotidien</div>
+      <div class="text-xs text-muted mb-sm">Combien de minutes d'apprentissage par jour ?</div>
+      <div class="goal-slider-wrap">
+        <input type="range" min="5" max="60" step="5"
+               value="${store.get('user')?.dailyGoalMinutes || 10}"
+               data-action="set-daily-goal"/>
+        <span class="goal-slider-label" id="goal-slider-label">${store.get('user')?.dailyGoalMinutes || 10} min</span>
+      </div>
+    </div>
   `;
 }
 
@@ -673,6 +684,22 @@ renderSettings.mount = () => {
       });
     })
   );
+
+  // Daily goal slider
+  document.querySelectorAll('[data-action="set-daily-goal"]').forEach(input => {
+    const label = document.getElementById('goal-slider-label');
+    input.addEventListener('input', () => {
+      if (label) label.textContent = `${input.value} min`;
+    });
+    input.addEventListener('change', () => {
+      const val = Number(input.value);
+      store.update('user', u => ({ ...u, dailyGoalMinutes: val }));
+      if (label) label.textContent = `${val} min`;
+      if (window.__KIVU__?.toast) {
+        window.__KIVU__.toast(`Objectif : ${val} min/jour ✓`, { type: 'success', duration: 1600 });
+      }
+    });
+  });
 
   // Plan selection — paid plans go to /checkout, free goes back instantly
   document.querySelectorAll('[data-action="select-plan"]').forEach(btn =>

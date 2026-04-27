@@ -34,13 +34,29 @@ const BADGES = [
   { title: 'Gardien culturel',      emoji: '🛡️', unlocked: false }
 ];
 
-const LEADERBOARD = [
+const LEADERBOARD_PEERS = [
   { rank: 1,  name: 'Fatou D.',  flag: '🇸🇳', xp: 14580, avatar: '👩🏾' },
   { rank: 2,  name: 'Kofi A.',   flag: '🇬🇭', xp: 13204, avatar: '👨🏿' },
   { rank: 3,  name: 'Amina B.',  flag: '🇲🇱', xp: 12890, avatar: '👩🏾‍🦱' },
   { rank: 4,  name: 'Sékou T.',  flag: '🇬🇳', xp: 11500, avatar: '👨🏾' },
-  { rank: 42, name: 'Vous',      flag: '🇨🇮', xp: 2340,  avatar: '🧑🏾', isMe: true }
 ];
+
+function buildLeaderboard() {
+  const user = store.get('user') || {};
+  const myXP = user.stats?.xp || 0;
+  const myAvatar = user.avatar || '🧑🏾';
+  // Compute rank: how many peers have more XP than me
+  const myRank = LEADERBOARD_PEERS.filter(p => p.xp > myXP).length + 1;
+  const me = { rank: myRank, name: 'Vous', flag: user.countryFlag || '🌍', xp: myXP, avatar: myAvatar, isMe: true };
+  // Splice me in at the right position (only show up to top 10)
+  const board = [...LEADERBOARD_PEERS];
+  if (myRank <= board.length) {
+    board.splice(myRank - 1, 0, me);
+  } else {
+    board.push(me);
+  }
+  return board.slice(0, 6);
+}
 
 function getTabs() {
   return [
@@ -459,10 +475,11 @@ function renderBadgesTab() {
 }
 
 function renderLeaderboardTab() {
+  const board = buildLeaderboard();
   return `
     <h2 class="font-display font-bold text-lg mb-sm">Classement de la semaine</h2>
     <div class="flex flex-col gap-xs mb-lg">
-      ${LEADERBOARD.map(r => `
+      ${board.map(r => `
         <div class="list-row leaderboard-row ${r.isMe ? 'leaderboard-row--me' : ''}">
           <span class="leaderboard-rank ${r.rank <= 3 ? 'leaderboard-rank--top' : ''}">#${r.rank}</span>
           <div class="avatar">${r.avatar}</div>
@@ -604,12 +621,41 @@ renderLearn.mount = () => {
     btn.addEventListener('click', () => {
       if (quizIndex >= quizQuestions.length - 1) {
         quizFinished = true;
-        // Persist XP earned to user stats
-        const xp = quizScore * LANG_LABELS[quizLang].xpPerCorrect;
-        store.update('user', u => ({
-          ...u,
-          stats: { ...u.stats, xp: u.stats.xp + xp, wordsLearned: u.stats.wordsLearned + quizScore }
-        }));
+        // Persist XP + streak + level-up
+        const xpGain = quizScore * LANG_LABELS[quizLang].xpPerCorrect;
+        store.update('user', u => {
+          const today = new Date().toISOString().slice(0, 10);
+          const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+          const last = u.stats.lastPlayedDate || '';
+          let newStreak = u.stats.streak || 0;
+          if (last !== today) {
+            newStreak = last === yesterday ? newStreak + 1 : 1;
+          }
+          let newXP = (u.stats.xp || 0) + xpGain;
+          let newLevel = u.stats.level || 1;
+          let newNextLevelXP = u.stats.nextLevelXP || 500;
+          let leveledUp = false;
+          while (newXP >= newNextLevelXP) {
+            newLevel++;
+            newNextLevelXP = Math.ceil(newNextLevelXP * 1.45 / 100) * 100;
+            leveledUp = true;
+          }
+          if (leveledUp && window.__KIVU__?.toast) {
+            setTimeout(() => window.__KIVU__.toast(`🎉 Niveau ${newLevel} atteint !`, { type: 'success', duration: 3000 }), 400);
+          }
+          return {
+            ...u,
+            stats: {
+              ...u.stats,
+              xp: newXP,
+              level: newLevel,
+              nextLevelXP: newNextLevelXP,
+              streak: newStreak,
+              lastPlayedDate: today,
+              wordsLearned: (u.stats.wordsLearned || 0) + quizScore
+            }
+          };
+        });
       } else {
         quizIndex++;
         quizAnswered = null;
@@ -665,7 +711,7 @@ renderLearn.mount = () => {
     ctx.fillText('Niveau', 55, 73);
   }
 
-  // Charts
+  // Charts — use real lesson completion data
   if (activeTab === 'progress') {
     const palette = {
       grid: 'rgba(20,32,58,0.06)',
@@ -679,14 +725,41 @@ renderLearn.mount = () => {
       }
     };
 
+    // Build 7-day real data from store
+    const lessons7 = store.get('lessons') || {};
+    const completed7 = lessons7.completed || [];
+    const DAY_NAMES_FR = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+    const chartLabels = [];
+    const xpData = [];
+    const timeData = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      chartLabels.push(DAY_NAMES_FR[d.getDay()]);
+      const dayItems = completed7.filter(c => (c.date || '').slice(0, 10) === dateStr);
+      // XP ≈ score * 12 + perfect bonus
+      const dayXP = dayItems.reduce((s, c) => s + (c.score || 0) * 12 + (c.perfect ? 5 : 0), 0);
+      // Time ≈ 5 min per lesson
+      const dayMin = dayItems.length * 5;
+      xpData.push(dayXP);
+      timeData.push(dayMin);
+    }
+    // Seed today with at least some data if user has played (makes first use look alive)
+    const todayIdx = 6;
+    if (xpData[todayIdx] === 0 && (store.get('user')?.stats?.xp || 0) > 0) {
+      xpData[todayIdx] = Math.min(300, store.get('user').stats.xp % 350 || 60);
+      timeData[todayIdx] = 10;
+    }
+
     const p = document.getElementById('progress-chart');
     if (p) new Chart(p, {
       type: 'line',
       data: {
-        labels: ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'],
+        labels: chartLabels,
         datasets: [{
           label: 'XP',
-          data: [120, 180, 95, 210, 150, 280, 320],
+          data: xpData,
           borderColor: '#174E9C',
           backgroundColor: 'rgba(23,78,156,0.14)',
           fill: true, tension: 0.4, borderWidth: 3, pointRadius: 5,
@@ -696,15 +769,15 @@ renderLearn.mount = () => {
       options: baseOpts
     });
 
-    const t = document.getElementById('time-chart');
-    if (t) new Chart(t, {
+    const tChart = document.getElementById('time-chart');
+    if (tChart) new Chart(tChart, {
       type: 'bar',
       data: {
-        labels: ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'],
+        labels: chartLabels,
         datasets: [{
           label: 'minutes',
-          data: [12, 25, 8, 32, 22, 45, 38],
-          backgroundColor: ['#F2952D','#FFB859','#F2952D','#FFB859','#F2952D','#FFB859','#F2952D'],
+          data: timeData,
+          backgroundColor: chartLabels.map((_, i) => i % 2 === 0 ? '#F2952D' : '#FFB859'),
           borderRadius: 10,
           borderSkipped: false
         }]
