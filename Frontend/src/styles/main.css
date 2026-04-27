@@ -4714,3 +4714,264 @@ html[data-theme="dark"] .sync-indicator {
   background: var(--surface);
   box-shadow: 0 2px 12px rgba(0,0,0,.35), 0 0 0 1px var(--divider);
 }
+
+/* ============================================================
+   PROFILE PAGE — Hero, XP ring, streak calendar, badges
+   ============================================================ */
+
+/* ── Hero Card ─────────────────────────────────────────────── */
+.profile-hero {
+  padding: 24px 20px 20px;
+}
+.profile-hero__top {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.profile-hero__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.profile-avatar-lg {
+  font-size: 52px;
+  line-height: 1;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── XP Ring ───────────────────────────────────────────────── */
+.xp-ring-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.xp-ring-svg {
+  display: block;
+  overflow: visible;
+}
+.xp-ring-arc {
+  transition: stroke-dashoffset 1.1s cubic-bezier(.2,.8,.3,1);
+}
+
+/* ── Mini stat cards (4-col) ───────────────────────────────── */
+.stat-card--mini {
+  padding: 12px 8px;
+  text-align: center;
+}
+.stat-card--mini .stat-emoji { font-size: 20px; margin-bottom: 2px; }
+.stat-card--mini .stat-value { font-size: 16px; font-weight: 800; }
+.stat-card--mini .stat-label { font-size: 10px; color: var(--text-tertiary); }
+
+/* ── Language chips ────────────────────────────────────────── */
+.lang-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lc, var(--kivu-primary)) 12%, transparent);
+  color: var(--lc, var(--kivu-primary));
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid color-mix(in srgb, var(--lc, var(--kivu-primary)) 25%, transparent);
+}
+
+/* ── Streak Calendar ───────────────────────────────────────── */
+.streak-cal {
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.streak-cal__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  min-width: 18px;
+}
+.streak-cal__dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--divider);
+  transition: background 0.25s ease;
+}
+.streak-cal__cell.is-done .streak-cal__dot {
+  background: linear-gradient(135deg, #1CB0F6, #FF9600);
+  box-shadow: 0 2px 6px rgba(28,176,246,.35);
+}
+.streak-cal__cell.is-today .streak-cal__dot {
+  outline: 2px solid var(--kivu-primary);
+  outline-offset: 2px;
+}
+.streak-cal__lbl {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+/* ── Language progress ─────────────────────────────────────── */
+.lang-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lang-progress-flag {
+  font-size: 24px;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+}
+
+/* ── Badges Grid ───────────────────────────────────────────── */
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+@media (max-width: 380px) {
+  .badges-grid { grid-template-columns: repeat(5, 1fr); }
+}
+.badge-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px;
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--divider);
+  cursor: default;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.badge-cell--earned {
+  background: linear-gradient(145deg, var(--kivu-primary)12, transparent);
+  border-color: var(--kivu-primary);
+}
+.badge-cell--earned:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(28,176,246,.25);
+}
+.badge-cell--locked {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+.badge-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+.badge-label {
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 48px;
+}
+
+/* ── Leaderboard ───────────────────────────────────────────── */
+.lb-row {
+  border-radius: var(--r-md);
+  padding: 8px 10px;
+  transition: background 0.2s ease;
+}
+.lb-row--me {
+  background: linear-gradient(90deg, var(--kivu-primary)14, transparent);
+  border: 1px solid var(--kivu-primary)44;
+}
+.lb-rank {
+  width: 28px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+.lb-rank--top {
+  color: var(--kivu-accent);
+}
+
+/* ── Edit Profile Modal ────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.52);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 500;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeInModal 0.2s ease;
+}
+@keyframes fadeInModal {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.modal-sheet {
+  background: var(--surface);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  padding: 20px 20px 40px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  animation: slideUpModal 0.3s cubic-bezier(.2,.8,.3,1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+@keyframes slideUpModal {
+  from { transform: translateY(60px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.modal-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--divider);
+  margin: 0 auto 20px;
+}
+
+/* ── Avatar Picker ─────────────────────────────────────────── */
+.avatar-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+}
+.avatar-pick-btn {
+  font-size: 28px;
+  padding: 6px;
+  border-radius: var(--r-md);
+  border: 2px solid var(--divider);
+  background: var(--bg);
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+  line-height: 1;
+}
+.avatar-pick-btn:hover { transform: scale(1.15); }
+.avatar-pick-btn.is-selected {
+  border-color: var(--kivu-primary);
+  background: var(--kivu-primary)14;
+  transform: scale(1.15);
+}
+
+/* ── Dark mode profile tweaks ──────────────────────────────── */
+html[data-theme="dark"] .modal-sheet {
+  background: var(--surface);
+  border-top: 1px solid var(--divider);
+}
+html[data-theme="dark"] .badge-cell--earned {
+  background: color-mix(in srgb, var(--kivu-primary) 14%, transparent);
+}
+html[data-theme="dark"] .lb-row--me {
+  background: color-mix(in srgb, var(--kivu-primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--kivu-primary) 30%, transparent);
+}
