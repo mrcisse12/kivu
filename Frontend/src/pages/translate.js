@@ -1,5 +1,5 @@
 import { store } from '../store.js';
-import { findLanguage } from '../data/languages.js';
+import { LANGUAGES, findLanguage } from '../data/languages.js';
 import { icons } from '../components/icons.js';
 import { api, ApiError } from '../services/api.js';
 import { speech } from '../services/speech.js';
@@ -7,6 +7,14 @@ import { speech } from '../services/speech.js';
 let isRecording = false;
 let isTranslating = false;
 let currentMode = 'voice';
+
+// Language picker state
+let pickerOpen = false;   // false | 'source' | 'target'
+let pickerQuery = '';
+
+// Conversation mode state
+let convMessages = [];
+let convTurn = 'user'; // 'user' | 'partner'
 
 let sourceText = '';
 let translation = null; // { translatedText, confidence, offline }
@@ -65,8 +73,9 @@ export function renderTranslate() {
       ${renderLangPill(target, 'Vers', 'target')}
     </div>
 
-    <!-- Source card -->
-    <div class="card translate-card translate-card--source mb-md">
+    <!-- Source card (hidden in camera/conversation modes) -->
+    <div class="card translate-card translate-card--source mb-md"
+         style="${['camera','conversation'].includes(currentMode) ? 'display:none' : ''}">
       <div class="translate-card__head">
         <div class="flex items-center gap-xs">
           <span class="lang-flag">${source.flag}</span>
@@ -90,10 +99,14 @@ export function renderTranslate() {
            </div>`}
     </div>
 
-    ${currentMode === 'voice' ? renderMicButton(sttOk) : renderTextActions()}
+    ${currentMode === 'voice'        ? renderMicButton(sttOk) : ''}
+    ${currentMode === 'text'         ? renderTextActions() : ''}
+    ${currentMode === 'camera'       ? renderCameraMode() : ''}
+    ${currentMode === 'conversation' ? renderConversationMode(source, target) : ''}
 
-    <!-- Target card -->
-    <div class="card translate-card translate-card--target mb-md">
+    <!-- Target card (hidden in camera/conversation modes) -->
+    <div class="card translate-card translate-card--target mb-md"
+         style="${['camera','conversation'].includes(currentMode) ? 'display:none' : ''}">
       <div class="translate-card__head">
         <div class="flex items-center gap-xs">
           <span class="lang-flag">${target.flag}</span>
@@ -174,6 +187,9 @@ export function renderTranslate() {
     <div class="flex flex-col gap-xs mb-lg">
       ${HISTORY.map(h => renderHistoryItem(h)).join('')}
     </div>
+
+    <!-- Language picker modal (rendered when open) -->
+    ${pickerOpen ? renderLangPicker(pickerOpen) : ''}
   `;
 }
 
@@ -215,6 +231,158 @@ function renderLangPill(lang, label, target) {
       <span class="lang-pill__chevron" aria-hidden="true">${icons.chevronDown(16)}</span>
     </button>
   `;
+}
+
+/* ── Camera mode ────────────────────────────────────────────── */
+function renderCameraMode() {
+  return `
+    <div class="camera-zone mb-md">
+      <div class="camera-frame">
+        <div class="camera-frame__inner">
+          <div class="camera-icon-wrap">
+            ${icons.camera(36, 'white')}
+          </div>
+          <div class="camera-hint">
+            Pointez votre caméra sur un texte<br>
+            <span style="font-size:11px; opacity:0.7;">Swahili · Yoruba · Haoussa · Français pris en charge</span>
+          </div>
+          <button class="btn btn-white btn-sm mt-sm" data-action="camera-capture">
+            Capturer & Traduire
+          </button>
+        </div>
+        <!-- Decorative corner scan lines -->
+        <div class="scan-corner scan-corner--tl"></div>
+        <div class="scan-corner scan-corner--tr"></div>
+        <div class="scan-corner scan-corner--bl"></div>
+        <div class="scan-corner scan-corner--br"></div>
+        <div class="scan-line"></div>
+      </div>
+      <div class="text-xs text-muted text-center mt-xs">
+        OCR multilingue — fonctionne hors-ligne
+      </div>
+    </div>
+  `;
+}
+
+/* ── Conversation mode ──────────────────────────────────────── */
+function renderConversationMode(source, target) {
+  return `
+    <div class="conv-zone mb-md">
+      <!-- Stream -->
+      <div class="conv-stream" id="conv-stream">
+        ${convMessages.map(m => `
+          <div class="conv-bubble conv-bubble--${m.side}">
+            <div class="conv-bubble__lang">
+              ${m.side === 'user' ? source.flag : target.flag}
+              ${m.side === 'user' ? source.name : target.name}
+            </div>
+            <div class="conv-bubble__text">${escapeHtml(m.text)}</div>
+            ${m.translation ? `<div class="conv-bubble__trans">${escapeHtml(m.translation)}</div>` : ''}
+          </div>
+        `).join('')}
+        ${convMessages.length === 0 ? `
+          <div class="conv-empty">
+            <div style="font-size:40px; margin-bottom:8px;">🤝</div>
+            <div class="font-semibold">Conversation bilingue</div>
+            <div class="text-xs text-muted mt-xs">
+              Chaque personne parle sa langue — KIVU traduit en temps réel.
+            </div>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Two mic buttons: user side + partner side -->
+      <div class="conv-controls">
+        <div class="conv-mic-wrap ${convTurn === 'user' ? 'is-active' : ''}">
+          <span class="text-xs font-bold text-center">${source.flag} ${source.name}</span>
+          <button class="conv-mic-btn ${convTurn === 'user' && isRecording ? 'is-recording' : ''}"
+                  data-action="conv-speak-user" aria-label="Parler en ${source.name}">
+            ${icons.mic(22, 'white')}
+          </button>
+          <span class="text-xs text-muted">${convTurn === 'user' && isRecording ? 'Écoute…' : 'Toucher pour parler'}</span>
+        </div>
+
+        <div class="conv-divider">⇄</div>
+
+        <div class="conv-mic-wrap ${convTurn === 'partner' ? 'is-active' : ''}">
+          <span class="text-xs font-bold text-center">${target.flag} ${target.name}</span>
+          <button class="conv-mic-btn ${convTurn === 'partner' && isRecording ? 'is-recording' : ''}"
+                  data-action="conv-speak-partner" aria-label="Parler en ${target.name}">
+            ${icons.mic(22, 'white')}
+          </button>
+          <span class="text-xs text-muted">${convTurn === 'partner' && isRecording ? 'Écoute…' : 'Toucher pour parler'}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ── Language Picker Modal ──────────────────────────────────── */
+function renderLangPicker(which) {
+  const { sourceLanguage, targetLanguage } = store.get('translation');
+  const current = which === 'source' ? sourceLanguage : targetLanguage;
+
+  const filtered = LANGUAGES.filter(l =>
+    !pickerQuery || l.name.toLowerCase().includes(pickerQuery.toLowerCase()) ||
+    l.nativeName.toLowerCase().includes(pickerQuery.toLowerCase())
+  );
+
+  const groups = [
+    { label: 'Internationales', ids: filtered.filter(l => l.status === 'international') },
+    { label: 'Langues véhiculaires', ids: filtered.filter(l => l.status === 'lingua') },
+    { label: 'Langues vitales', ids: filtered.filter(l => l.status === 'healthy') },
+    { label: 'Langues vulnérables', ids: filtered.filter(l => l.status === 'vulnerable') },
+    { label: 'Langues menacées', ids: filtered.filter(l => ['endangered','critical'].includes(l.status)) },
+  ].filter(g => g.ids.length > 0);
+
+  return `
+    <div class="modal-backdrop" id="lang-picker-backdrop" role="dialog"
+         aria-modal="true" aria-label="Choisir une langue">
+      <div class="modal-sheet lang-picker-sheet">
+        <div class="modal-handle"></div>
+        <div class="flex items-center gap-sm mb-md">
+          <h2 class="font-display font-bold text-lg" style="flex:1;">
+            ${which === 'source' ? 'Langue source' : 'Langue cible'}
+          </h2>
+          <button class="icon-btn" id="lang-picker-close" aria-label="Fermer">${icons.close(20)}</button>
+        </div>
+
+        <!-- Search -->
+        <div class="form-group mb-md" style="position:relative;">
+          <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-tertiary);">
+            ${icons.search(16)}
+          </span>
+          <input id="lang-picker-search" class="form-input" type="search"
+                 placeholder="Rechercher une langue…"
+                 value="${escapeAttr(pickerQuery)}"
+                 style="padding-left:40px;" autocomplete="off"/>
+        </div>
+
+        <!-- Language list -->
+        <div class="lang-picker-list">
+          ${groups.map(g => `
+            <div class="lang-picker-group-label">${g.label}</div>
+            ${g.ids.map(l => `
+              <button class="lang-picker-row ${l.id === current ? 'is-selected' : ''}"
+                      data-action="pick-lang" data-id="${l.id}" data-which="${which}">
+                <span class="lang-flag-lg" aria-hidden="true">${l.flag}</span>
+                <div style="flex:1; text-align:left;">
+                  <div class="font-semibold">${l.name}</div>
+                  <div class="text-xs text-muted">${l.nativeName}</div>
+                </div>
+                ${l.id === current ? `<span style="color:var(--kivu-primary);">${icons.check(18)}</span>` : ''}
+              </button>
+            `).join('')}
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function escapeAttr(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 function renderHistoryItem(h) {
@@ -285,6 +453,55 @@ renderTranslate.mount = () => {
       }
     })
   );
+
+  // Language picker — open
+  document.querySelectorAll('[data-action="pick-source"]').forEach(el =>
+    el.addEventListener('click', () => { pickerOpen = 'source'; pickerQuery = ''; rerender(); })
+  );
+  document.querySelectorAll('[data-action="pick-target"]').forEach(el =>
+    el.addEventListener('click', () => { pickerOpen = 'target'; pickerQuery = ''; rerender(); })
+  );
+
+  // Language picker — close via X or backdrop
+  document.getElementById('lang-picker-close')?.addEventListener('click', () => {
+    pickerOpen = false; rerender();
+  });
+  document.getElementById('lang-picker-backdrop')?.addEventListener('click', (e) => {
+    if (e.target.id === 'lang-picker-backdrop') { pickerOpen = false; rerender(); }
+  });
+
+  // Language picker — search
+  document.getElementById('lang-picker-search')?.addEventListener('input', (e) => {
+    pickerQuery = e.target.value;
+    // Rebuild only the list content without full re-render for smooth typing
+    const list = document.querySelector('.lang-picker-list');
+    if (list && pickerOpen) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = renderLangPicker(pickerOpen);
+      const newList = tmp.querySelector('.lang-picker-list');
+      if (newList) list.innerHTML = newList.innerHTML;
+      // Re-attach pick-lang handlers inside picker
+      attachPickLangHandlers();
+    }
+  });
+
+  function attachPickLangHandlers() {
+    document.querySelectorAll('[data-action="pick-lang"]').forEach(btn =>
+      btn.addEventListener('click', () => {
+        const { id, which } = btn.dataset;
+        if (which === 'source') {
+          store.update('translation', t => ({ ...t, sourceLanguage: id }));
+        } else {
+          store.update('translation', t => ({ ...t, targetLanguage: id }));
+        }
+        pickerOpen = false;
+        pickerQuery = '';
+        translation = null;
+        rerender();
+      })
+    );
+  }
+  attachPickLangHandlers();
 
   // Mic button — Web Speech STT
   document.querySelectorAll('[data-action="mic-toggle"]').forEach(el =>
@@ -433,6 +650,82 @@ renderTranslate.mount = () => {
       }
     }
   }
+
+  // ── Camera mode ──────────────────────────────────────────────
+  document.querySelectorAll('[data-action="camera-capture"]').forEach(el =>
+    el.addEventListener('click', async () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.capture = 'environment';
+      input.onchange = async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        if (window.__KIVU__?.toast) {
+          window.__KIVU__.toast('OCR en cours…', { type: 'info', duration: 2000 });
+        }
+        await new Promise(r => setTimeout(r, 1500));
+        sourceText = 'Texte capturé par la caméra (démonstration OCR)';
+        translation = {
+          translatedText: 'Camera-captured text — OCR demonstration mode',
+          confidence: 0.78,
+          offline: true,
+          durationMs: 312
+        };
+        currentMode = 'text';
+        rerender();
+      };
+      input.click();
+    })
+  );
+
+  // ── Conversation mode ─────────────────────────────────────────
+  function handleConvSpeak(side) {
+    if (isRecording) { stopListening?.(); isRecording = false; convTurn = side; rerender(); return; }
+    convTurn = side;
+    isRecording = true;
+    rerender();
+    const { sourceLanguage, targetLanguage } = store.get('translation');
+    const lang      = side === 'user'    ? sourceLanguage : targetLanguage;
+    const otherLang = side === 'user'    ? targetLanguage : sourceLanguage;
+
+    stopListening = speech.startListening(lang, {
+      onResult: ({ text, isFinal }) => {
+        if (isFinal && text.trim()) {
+          isRecording = false;
+          stopListening = null;
+          convMessages.push({ side, text: text.trim(), translation: null });
+          rerender();
+          api.translate(text.trim(), lang, otherLang).then(res => {
+            if (convMessages.length > 0) {
+              convMessages[convMessages.length - 1].translation = res.translatedText;
+            }
+            if (speech.ttsSupported) speech.speak(res.translatedText, otherLang);
+            rerender();
+            const cs = document.getElementById('conv-stream');
+            if (cs) cs.scrollTop = cs.scrollHeight;
+          }).catch(() => {
+            if (convMessages.length > 0) {
+              convMessages[convMessages.length - 1].translation = '[traduction indisponible]';
+            }
+            rerender();
+          });
+        }
+      },
+      onError: () => { isRecording = false; stopListening = null; rerender(); },
+      onEnd:   () => { if (isRecording) { isRecording = false; rerender(); } }
+    });
+  }
+
+  document.querySelectorAll('[data-action="conv-speak-user"]').forEach(el =>
+    el.addEventListener('click', () => handleConvSpeak('user'))
+  );
+  document.querySelectorAll('[data-action="conv-speak-partner"]').forEach(el =>
+    el.addEventListener('click', () => handleConvSpeak('partner'))
+  );
+
+  const convStreamEl = document.getElementById('conv-stream');
+  if (convStreamEl) convStreamEl.scrollTop = convStreamEl.scrollHeight;
 };
 
 function copyToClipboard(text, successMsg) {

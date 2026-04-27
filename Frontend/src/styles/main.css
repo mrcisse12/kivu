@@ -4975,3 +4975,252 @@ html[data-theme="dark"] .lb-row--me {
   background: color-mix(in srgb, var(--kivu-primary) 12%, transparent);
   border-color: color-mix(in srgb, var(--kivu-primary) 30%, transparent);
 }
+
+/* ============================================================
+   TRANSLATE — Camera mode, Conversation mode, Language Picker
+   ============================================================ */
+
+/* ── Camera Zone ─────────────────────────────────────────────── */
+.camera-zone {
+  position: relative;
+}
+.camera-frame {
+  position: relative;
+  background: #0A0E1A;
+  border-radius: var(--r-xl);
+  min-height: 220px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #1A2030;
+}
+.camera-frame__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+  z-index: 2;
+  position: relative;
+}
+.camera-icon-wrap {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: rgba(28,176,246,.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgba(28,176,246,.3);
+}
+.camera-hint {
+  color: rgba(255,255,255,.8);
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.5;
+}
+/* Scan-line animation */
+.scan-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #1CB0F6, transparent);
+  animation: scan 2.5s ease-in-out infinite;
+  z-index: 1;
+}
+@keyframes scan {
+  0%   { top: 10%; opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { top: 88%; opacity: 0; }
+}
+/* Corner brackets */
+.scan-corner {
+  position: absolute;
+  width: 20px; height: 20px;
+  border-color: #1CB0F6;
+  border-style: solid;
+  z-index: 2;
+}
+.scan-corner--tl { top: 10px; left: 10px; border-width: 2px 0 0 2px; border-radius: 3px 0 0 0; }
+.scan-corner--tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; border-radius: 0 3px 0 0; }
+.scan-corner--bl { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; border-radius: 0 0 0 3px; }
+.scan-corner--br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; border-radius: 0 0 3px 0; }
+
+/* ── Conversation Mode ───────────────────────────────────────── */
+.conv-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.conv-stream {
+  min-height: 180px;
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--divider);
+  scroll-behavior: smooth;
+}
+.conv-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+.conv-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: var(--r-lg);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.conv-bubble--user {
+  align-self: flex-end;
+  background: var(--kivu-primary);
+  color: white;
+  border-radius: var(--r-lg) var(--r-lg) 4px var(--r-lg);
+}
+.conv-bubble--partner {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-lg) var(--r-lg) var(--r-lg) 4px;
+}
+.conv-bubble__lang {
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.7;
+  margin-bottom: 2px;
+}
+.conv-bubble__trans {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 4px;
+  font-style: italic;
+  border-top: 1px solid rgba(255,255,255,.2);
+  padding-top: 4px;
+}
+.conv-bubble--partner .conv-bubble__trans {
+  border-top-color: var(--divider);
+}
+.conv-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--divider);
+}
+.conv-mic-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+.conv-mic-wrap.is-active { opacity: 1; }
+.conv-mic-btn {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--kivu-primary);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(28,176,246,.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.conv-mic-btn:hover { transform: scale(1.08); }
+.conv-mic-btn.is-recording {
+  background: var(--error);
+  animation: conv-pulse 1s ease-in-out infinite;
+  box-shadow: 0 0 0 6px rgba(255,75,75,.2);
+}
+@keyframes conv-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(255,75,75,.2); }
+  50%       { box-shadow: 0 0 0 10px rgba(255,75,75,.08); }
+}
+.conv-divider {
+  font-size: 22px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+/* ── Language Picker ─────────────────────────────────────────── */
+.lang-picker-sheet {
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.lang-picker-list {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0 -20px;
+  padding: 0 20px;
+}
+.lang-picker-group-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-tertiary);
+  padding: 12px 0 4px;
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+.lang-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--divider);
+  width: 100%;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-radius: 0;
+}
+.lang-picker-row:hover { background: var(--bg); }
+.lang-picker-row.is-selected { background: var(--kivu-primary)0d; }
+.lang-flag-lg { font-size: 28px; line-height: 1; flex-shrink: 0; }
+
+/* ============================================================
+   ASSISTANT — typing indicator
+   ============================================================ */
+.typing-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 2px 0;
+}
+.typing-dots span {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--kivu-primary);
+  animation: typing-dot 1.2s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing-dot {
+  0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+  30% { opacity: 1; transform: scale(1.1); }
+}

@@ -1,23 +1,98 @@
 import { icons } from '../components/icons.js';
+import { store } from '../store.js';
+import { speech } from '../services/speech.js';
+
+/* ── Contextual AI response engine ─────────────────────────── */
+// Keyword-based dispatch — gives realistic, varied replies
+const AI_RULES = [
+  // Greetings
+  { re: /^(bonjour|salut|hello|bonsoir|hi\b)/i, replies: [
+    'Bonjour ! 🌍 Prêt à explorer une nouvelle langue africaine aujourd\'hui ?',
+    'Salut ! Kivi est là pour t\'aider. Quelle langue veux-tu apprendre aujourd\'hui ?',
+  ]},
+  // Market / shopping
+  { re: /march[eé]|achet|vend|prix|combien|fcfa|monnaie/i, replies: [
+    'Super contexte ! En Swahili : **"Bei gani?"** = Combien ça coûte ? 🛒\nEssaie de le répéter à voix haute !',
+    'En Haoussa, au marché tu peux dire : **"Nawa ne?"** (combien ?) et **"Yi arha"** (c\'est trop cher). 💰',
+    'En Dioula : **"Joli foli yen?"** = Combien ça coûte ? C\'est la phrase essentielle du marché ! 🥭',
+  ]},
+  // Greetings / politeness
+  { re: /polites|bonjour|saluer|accueillir|bienvenu/i, replies: [
+    'En Wolof : **"Nanga def ?"** = Comment vas-tu ? Et la réponse : **"Maa ngi fi rekk"** (Je suis là, juste ici) 🤝',
+    'En Swahili : **"Habari yako ?"** = Comment ça va ? → **"Nzuri sana !"** (Très bien !)',
+  ]},
+  // Numbers
+  { re: /chiffr|nomb|compt|1|2|3|4|5/i, replies: [
+    '🔢 En Swahili, de 1 à 5 : moja, mbili, tatu, nne, tano. Répétons ensemble !',
+    'En Haoussa : ɗaya (1), biyu (2), uku (3), huɗu (4), biyar (5). Tu veux continuer jusqu\'à 10 ?',
+  ]},
+  // Food
+  { re: /mang[eé]r|nourriture|repas|faim|soif|eau|boire|pain|riz/i, replies: [
+    'En Swahili : **"Chakula"** = nourriture, **"Maji"** = eau, **"Njaa"** = faim. 🍚\nTu veux le menu complet ?',
+    'En Wolof : **"Lekk"** = manger, **"Dëkk"** = vivre, **"Ndox"** = eau. La survie en 3 mots ! 💧',
+  ]},
+  // Travel
+  { re: /voyage|trajet|route|aller|venir|partir|ici|là|où/i, replies: [
+    '🧭 En Swahili : **"Wapi...?"** = Où est... ? Ex : **"Wapi hospitali ?"** = Où est l\'hôpital ?',
+    'En Haoussa : **"Ina..."** = Où est... ? **"Ina gida ?"** = Où est la maison ? Très utile en voyage !',
+  ]},
+  // Lesson / learning
+  { re: /leçon|apprendre|exercice|quiz|test|pratique|niveau/i, replies: [
+    '📚 Tu peux aller dans la section **Apprentissage** pour suivre ta leçon du jour avec des quiz interactifs !',
+    'Je vois que tu es motivé ! 🔥 Ta prochaine leçon t\'attend dans l\'onglet **Apprendre**. Veux-tu un avant-goût ici ?',
+  ]},
+  // Default (catch-all, varied)
+  { re: /./, replies: [
+    'Intéressant ! Quelle langue africaine veux-tu explorer — Swahili 🇹🇿, Haoussa 🇳🇬, Wolof 🇸🇳, ou Dioula 🇨🇮 ?',
+    '💡 Bon à savoir ! Je peux t\'enseigner des phrases pratiques, des proverbes ou t\'aider avec ta leçon du jour.',
+    'Je t\'écoute ! Tu veux apprendre du vocabulaire, pratiquer une conversation, ou comprendre la culture ?',
+    'Super ! Dis-moi dans quel contexte tu veux utiliser cette langue — je t\'adapte l\'apprentissage. 🌍',
+  ]},
+];
+
+function getAiReply(userText) {
+  for (const rule of AI_RULES) {
+    if (rule.re.test(userText)) {
+      const pool = rule.replies;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+  }
+  return 'Je réfléchis… 🤔';
+}
+
+// Render markdown-like bold in bubbles
+function formatContent(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
 
 let messages = [
-  { from: 'ai',   content: 'Bonjour Amadou ! Prêt pour ta leçon du jour ? Aujourd\'hui on apprend à marchander en Haussa.' },
-  { from: 'user', content: 'Oui, je vais au marché plus tard' },
-  { from: 'ai',   content: 'Parfait ! Commençons par le vocabulaire essentiel. En Haussa, "combien ça coûte ?" se dit "Nawa ne?". Essayez de répéter.' }
+  { from: 'ai', content: 'Bonjour ! Je suis **Kivi**, ton tuteur IA. 🌍\nQuelle langue africaine veux-tu explorer aujourd\'hui ?' }
 ];
 
 const SUGGESTIONS = [
   'Leçon du jour',
-  'Parler au marché',
-  'Politesse',
-  'Chiffres'
+  'Phrases au marché',
+  'Salutations',
+  'Chiffres 1-10',
+  'Nourriture',
+  'Voyager'
 ];
 
-const CONTEXT_CHIPS = [
-  { emoji: '📍', label: 'Marché proche', color: 'accent' },
-  { emoji: '📖', label: 'Haussa niv. 3', color: 'primary' },
-  { emoji: '🔥', label: '12 j de série',  color: 'error' }
-];
+function getContextChips() {
+  const user    = store.get('user') || {};
+  const lessons = store.get('lessons') || {};
+  const streak  = user.stats?.streak || 0;
+  const level   = user.stats?.level  || 1;
+  const lang    = user.preferredLanguage || 'swa';
+  const LANG_NAMES = { fra:'Français', eng:'Anglais', swa:'Swahili', wol:'Wolof', bam:'Bambara', dyu:'Dioula', hau:'Haoussa', yor:'Yoruba' };
+  return [
+    { emoji: '📖', label: `${LANG_NAMES[lang] || lang} niv. ${level}`, color: 'primary' },
+    { emoji: '🔥', label: `${streak} j de série`, color: 'error' },
+    { emoji: '⚡', label: `${user.stats?.xp || 0} XP`, color: 'accent' },
+  ];
+}
 
 export function renderAssistant() {
   return `
@@ -36,7 +111,7 @@ export function renderAssistant() {
     <!-- Context bar -->
     <div class="flex gap-xs mb-md scroll-x">
       <div class="scroll-x-row">
-        ${CONTEXT_CHIPS.map(c => `
+        ${getContextChips().map(c => `
           <span class="chip chip-${c.color}">${c.emoji} ${c.label}</span>
         `).join('')}
       </div>
@@ -73,18 +148,20 @@ export function renderAssistant() {
 }
 
 function renderBubble(m) {
+  const user = store.get('user');
+  const avatar = user?.avatar || '🧑🏾';
   if (m.from === 'ai') {
     return `
       <div class="bubble-row bubble-row--ai">
         <span class="bubble-avatar bubble-avatar--ai" aria-hidden="true">${icons.assistant(18, 'white')}</span>
-        <div class="bubble bubble--ai">${m.content}</div>
+        <div class="bubble bubble--ai">${m.typing ? '<span class="typing-dots"><span></span><span></span><span></span></span>' : formatContent(m.content)}</div>
       </div>
     `;
   }
   return `
     <div class="bubble-row bubble-row--user">
-      <div class="bubble bubble--user">${m.content}</div>
-      <span class="bubble-avatar bubble-avatar--user" aria-hidden="true">🧑🏾</span>
+      <div class="bubble bubble--user">${formatContent(m.content)}</div>
+      <span class="bubble-avatar bubble-avatar--user" aria-hidden="true">${avatar}</span>
     </div>
   `;
 }
@@ -97,16 +174,26 @@ renderAssistant.mount = () => {
 
   function send(text) {
     if (!text || !text.trim()) return;
-    messages.push({ from: 'user', content: text.trim() });
+    const userText = text.trim();
+    messages.push({ from: 'user', content: userText });
+    // Show typing indicator
+    messages.push({ from: 'ai', content: '', typing: true });
     rerender(true);
 
+    // Realistic delay (600–1200ms)
+    const delay = 600 + Math.random() * 600;
     setTimeout(() => {
-      messages.push({
-        from: 'ai',
-        content: 'Excellent ! Essayons : "Yaya ne mangoro?" (Combien coûte la mangue ?)'
-      });
+      // Remove typing indicator
+      messages = messages.filter(m => !m.typing);
+      const reply = getAiReply(userText);
+      messages.push({ from: 'ai', content: reply });
       rerender(true);
-    }, 900);
+      // TTS read-out if supported
+      if (speech.ttsSupported) {
+        const plain = reply.replace(/\*\*/g, '').replace(/<br>/g, ' ').replace(/🔢|🛒|💰|🥭|🤝|💧|🧭|📚|🔥|💡|🌍|🤔/g, '');
+        speech.speak(plain, 'fra');
+      }
+    }, delay);
   }
 
   function rerender(scroll) {
