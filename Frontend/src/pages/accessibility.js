@@ -1,5 +1,6 @@
-import { store } from '../store.js';
-import { icons } from '../components/icons.js';
+import { store }        from '../store.js';
+import { icons }        from '../components/icons.js';
+import { applyContrast } from '../theme.js';
 
 const GROUPS = [
   {
@@ -127,20 +128,42 @@ renderAccessibility.mount = () => {
 
   document.querySelectorAll('[data-action="a11y-toggle"]').forEach(btn =>
     btn.addEventListener('click', () => {
-      const key = btn.dataset.key;
+      const key  = btn.dataset.key;
       const prefs = store.get('preferences') || {};
-      store.set('preferences', { ...prefs, [key]: !prefs[key] });
+      const newVal = !prefs[key];
+      store.set('preferences', { ...prefs, [key]: newVal });
+      // Apply immediately
+      if (key === 'highContrast') applyContrast(newVal);
+      const label = newVal ? 'Activé' : 'Désactivé';
       if (window.__KIVU__?.toast) {
-        window.__KIVU__.toast(`Préférence "${key}" mise à jour`, { type: 'success', duration: 1500 });
+        window.__KIVU__.toast(label, { type: newVal ? 'success' : 'info', duration: 1200 });
       }
     })
   );
 
-  document.querySelectorAll('[data-action="a11y-slider"]').forEach(input =>
+  document.querySelectorAll('[data-action="a11y-slider"]').forEach(input => {
+    // Live preview while dragging
+    input.addEventListener('input', () => {
+      const key = input.dataset.key;
+      const val = Number(input.value);
+      if (key === 'fontSize') {
+        document.documentElement.style.setProperty('--root-font-size', `${val * 16}px`);
+        // Update adjacent label
+        const label = input.nextElementSibling;
+        if (label) label.textContent = `${val}x`;
+      }
+    });
     input.addEventListener('change', () => {
       const key = input.dataset.key;
+      const val = Number(input.value);
       const prefs = store.get('preferences') || {};
-      store.set('preferences', { ...prefs, [key]: Number(input.value) });
-    })
-  );
+      store.set('preferences', { ...prefs, [key]: val });
+      if (key === 'fontSize') {
+        document.documentElement.style.setProperty('--root-font-size', `${val * 16}px`);
+      }
+      if (window.__KIVU__?.toast) {
+        window.__KIVU__.toast('Taille de texte mise à jour', { type: 'success', duration: 1400 });
+      }
+    });
+  });
 };
