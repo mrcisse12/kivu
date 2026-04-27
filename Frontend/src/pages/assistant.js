@@ -1,6 +1,7 @@
 import { icons } from '../components/icons.js';
 import { store } from '../store.js';
 import { speech } from '../services/speech.js';
+import { api }   from '../services/api.js';
 
 /* ── Contextual AI response engine ─────────────────────────── */
 // Keyword-based dispatch — gives realistic, varied replies
@@ -180,20 +181,34 @@ renderAssistant.mount = () => {
     messages.push({ from: 'ai', content: '', typing: true });
     rerender(true);
 
-    // Realistic delay (600–1200ms)
-    const delay = 600 + Math.random() * 600;
-    setTimeout(() => {
-      // Remove typing indicator
+    // Try backend first, fall back to local AI rules
+    const user = store.get('user') || {};
+    const lang = user.preferredLanguage || 'fra';
+    const apiMessages = messages
+      .filter(m => !m.typing)
+      .map(m => ({ role: m.from === 'ai' ? 'assistant' : 'user', content: m.content }));
+
+    (async () => {
+      let reply;
+      try {
+        const res = await api.post('/assistant/chat', {
+          messages: apiMessages.slice(-8), // last 8 for context
+          targetLanguage: lang
+        });
+        reply = res.reply;
+      } catch {
+        // Offline / backend down → use local rules
+        reply = getAiReply(userText);
+      }
+
       messages = messages.filter(m => !m.typing);
-      const reply = getAiReply(userText);
       messages.push({ from: 'ai', content: reply });
       rerender(true);
-      // TTS read-out if supported
       if (speech.ttsSupported) {
-        const plain = reply.replace(/\*\*/g, '').replace(/<br>/g, ' ').replace(/🔢|🛒|💰|🥭|🤝|💧|🧭|📚|🔥|💡|🌍|🤔/g, '');
+        const plain = reply.replace(/\*\*/g, '').replace(/<br>/g, ' ').replace(/[🔢🛒💰🥭🤝💧🧭📚🔥💡🌍🤔]/g, '');
         speech.speak(plain, 'fra');
       }
-    }, delay);
+    })();
   }
 
   function rerender(scroll) {
@@ -223,6 +238,39 @@ renderAssistant.mount = () => {
 
   document.querySelectorAll('[data-action="suggest"]').forEach(btn =>
     btn.addEventListener('click', () => send(btn.dataset.text))
+  );
+
+  // Mic button — voice input for assistant
+  let stopAssistantStt = null;
+  document.querySelectorAll('.icon-btn--mic').forEach(btn =>
+    btn.addEventListener('click', () => {
+      if (stopAssistantStt) {
+        stopAssistantStt();
+        stopAssistantStt = null;
+        btn.style.color = '';
+        return;
+      }
+      if (!speech.sttSupported) {
+        if (window.__KIVU__?.toast) window.__KIVU__.toast('Reconnaissance vocale non disponible', { type: 'warning' });
+        return;
+      }
+      btn.style.color = 'var(--error)';
+      const user = store.get('user') || {};
+      const lang = user.preferredLanguage || 'fra';
+      stopAssistantStt = speech.startListening(lang, {
+        onResult: ({ text, isFinal }) => {
+          const inputEl = document.getElementById('assistant-input');
+          if (inputEl) inputEl.value = text;
+          if (isFinal && text.trim()) {
+            stopAssistantStt = null;
+            btn.style.color = '';
+            send(text.trim());
+          }
+        },
+        onError: () => { stopAssistantStt = null; btn.style.color = ''; },
+        onEnd:   () => { stopAssistantStt = null; btn.style.color = ''; }
+      });
+    })
   );
 
   // auto-scroll on first paint
