@@ -495,6 +495,29 @@ function onMatchClick(side, value, rerender) {
   rerender();
 }
 
+/* ── Confetti helper ─────────────────────────────────────── */
+function launchConfetti(count = 50) {
+  const COLORS = ['#174E9C','#F2952D','#FFB859','#2D9E73','#8C40AD','#EB4D4D','#1CB0F6','#FF9600'];
+  const wrap = document.createElement('div');
+  wrap.className = 'confetti-wrap';
+  document.body.appendChild(wrap);
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.cssText = [
+      `left: ${Math.random() * 100}%`,
+      `background: ${COLORS[i % COLORS.length]}`,
+      `width: ${6 + Math.random() * 8}px`,
+      `height: ${6 + Math.random() * 8}px`,
+      `border-radius: ${Math.random() > 0.5 ? '50%' : '2px'}`,
+      `animation-delay: ${Math.random() * 0.8}s`,
+      `animation-duration: ${1.8 + Math.random() * 1}s`
+    ].join(';');
+    wrap.appendChild(p);
+  }
+  setTimeout(() => wrap.remove(), 3200);
+}
+
 function loseHeart() {
   const lessons = store.get('lessons') || {};
   const next = Math.max(0, (lessons.hearts ?? 5) - 1);
@@ -601,7 +624,14 @@ function finishLesson() {
     }
   });
 
-  /* ── 4. Re-render ───────────────────────────────────────── */
+  /* ── 4. Confetti + re-render ────────────────────────────── */
+  launchConfetti(perfect ? 80 : 40);
+  if (leveledUp) {
+    const overlay = document.createElement('div');
+    overlay.className = 'levelup-overlay';
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.remove(), 900);
+  }
   const main = document.querySelector('main.screen');
   if (main) main.innerHTML = renderLessonPlayer();
   renderLessonPlayer.mount();
