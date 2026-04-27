@@ -236,5 +236,45 @@ window.addEventListener('scroll', () => {
   scrollBar.style.setProperty('--scroll', pct + '%');
 }, { passive: true });
 
+// ===========================================================
+// Hearts regeneration (every 4h, max 5)
+// ===========================================================
+function checkHeartsRegen() {
+  const lessons = store.get('lessons') || {};
+  if ((lessons.hearts ?? 5) >= 5) return;
+  const regenAt = lessons.heartsRegenAt;
+  if (regenAt && new Date(regenAt) <= new Date()) {
+    const newHearts = Math.min(5, (lessons.hearts ?? 0) + 1);
+    store.set('lessons', {
+      ...lessons,
+      hearts: newHearts,
+      heartsRegenAt: newHearts < 5 ? new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString() : null
+    });
+    if (newHearts === 5) {
+      toast('❤️ Vos 5 vies sont revenues !', { type: 'success', duration: 3000 });
+    }
+  }
+}
+// Check on load and every 5 minutes
+checkHeartsRegen();
+setInterval(checkHeartsRegen, 5 * 60 * 1000);
+
+// ===========================================================
+// Streak protection — warn at 20h if no lesson done today
+// ===========================================================
+function checkStreakProtection() {
+  const h = new Date().getHours();
+  if (h < 20) return; // only warn after 8pm
+  const user = store.get('user') || {};
+  const today = new Date().toISOString().slice(0, 10);
+  const lastPlayed = user.stats?.lastPlayedDate || '';
+  const streak = user.stats?.streak || 0;
+  if (streak > 0 && lastPlayed !== today) {
+    toast(`🔥 Ta série de ${streak} jours est en danger ! Fais une leçon avant minuit.`, { type: 'warning', duration: 6000 });
+  }
+}
+// Check once per session (don't spam)
+setTimeout(checkStreakProtection, 3000);
+
 // Export for console debug
 window.__KIVU__ = { navigate, store, toast };

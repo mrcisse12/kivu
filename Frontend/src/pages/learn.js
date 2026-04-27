@@ -695,6 +695,16 @@ renderLearn.mount = () => {
     })
   );
 
+  // Auto-scroll to current lesson node in the path tab
+  if (activeTab === 'path') {
+    setTimeout(() => {
+      const currentNode = document.querySelector('.lesson-node--current');
+      if (currentNode) {
+        currentNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 150);
+  }
+
   // XP Ring (canvas raw)
   const ring = document.getElementById('xp-ring');
   if (ring) {
