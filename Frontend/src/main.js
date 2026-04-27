@@ -27,6 +27,7 @@ import { setupInstallBanner } from './components/install-banner.js';
 import { setupMascotTracker } from './components/mascot-tracker.js';
 import { initI18n, onLangChange } from './i18n/index.js';
 import { applyPalette, applyDensity, applyContrast } from './theme.js';
+import { sync } from './services/sync.js';
 import { renderBottomNav } from './components/bottom-nav.js';
 import { renderDesktopNav } from './components/desktop-nav.js';
 import { store } from './store.js';
@@ -106,6 +107,14 @@ function render() {
 router.onChange(render);
 store.subscribe(render);
 
+// Cloud sync — push debounced on every store change, periodic loop, pull on tab focus
+store.subscribe(() => sync.pushSoon());
+sync.startPeriodic();
+// Initial pull if already signed in
+if (localStorage.getItem('kivu.token')) {
+  sync.pull().catch(() => {});
+}
+
 // Apply persisted theme + i18n + palette + density BEFORE first paint
 (() => {
   const prefs = store.get('preferences') || {};
@@ -150,6 +159,34 @@ setupInstallBanner();
 
 // Mascot eye-tracking (Kivi suit le curseur + cligne aléatoirement)
 setupMascotTracker();
+
+// ===========================================================
+// Cloud sync status indicator (top-right)
+// ===========================================================
+const syncIndicator = document.createElement('button');
+syncIndicator.className = 'sync-indicator';
+syncIndicator.title = 'Synchroniser maintenant';
+syncIndicator.setAttribute('aria-label', 'État de la synchronisation');
+syncIndicator.innerHTML = `<span class="sync-dot"></span><span class="sync-label">Sync</span>`;
+syncIndicator.addEventListener('click', () => sync.syncNow());
+document.body.appendChild(syncIndicator);
+
+const SYNC_LABELS = {
+  idle:     { text: 'Sync',      color: 'var(--text-tertiary)' },
+  syncing:  { text: 'Sync…',     color: 'var(--kivu-primary)' },
+  success:  { text: 'À jour',    color: 'var(--success)' },
+  error:    { text: 'Échec',     color: 'var(--error)' },
+  offline:  { text: 'Hors-ligne', color: 'var(--warning)' },
+  unauth:   { text: 'Connectez-vous', color: 'var(--text-tertiary)' }
+};
+sync.onChange((s) => {
+  const meta = SYNC_LABELS[s] || SYNC_LABELS.idle;
+  syncIndicator.style.setProperty('--sync-color', meta.color);
+  syncIndicator.querySelector('.sync-label').textContent = meta.text;
+  syncIndicator.dataset.status = s;
+  // Hide entirely when not signed in (avoid clutter for guests)
+  syncIndicator.style.display = s === 'unauth' ? 'none' : 'inline-flex';
+});
 
 // Event delegation for navigation links
 document.addEventListener('click', (e) => {

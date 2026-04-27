@@ -17,6 +17,7 @@ import { mascot } from '../components/mascot.js';
 import { recorder } from '../services/recorder.js';
 import { t, setLang, getLang, LANGS_AVAILABLE } from '../i18n/index.js';
 import { PALETTES, DENSITIES, applyPalette, applyDensity, applyContrast } from '../theme.js';
+import { sync } from '../services/sync.js';
 
 function sections() {
   return [
@@ -351,6 +352,15 @@ function renderAccount() {
             `).join('')}
           </select>
         </label>
+      </div>
+    </div>
+
+    <div class="card mb-md">
+      <button class="btn btn-ghost btn-full" data-action="cloud-sync-now">
+        ${icons.signal(16)} Synchroniser maintenant
+      </button>
+      <div class="text-xs text-muted mt-xs" style="text-align:center;">
+        Vos progrès se synchronisent automatiquement entre vos appareils.
       </div>
     </div>
 
@@ -698,16 +708,22 @@ renderSettings.mount = () => {
     })
   );
 
-  // Logout
+  // Logout — pousse une dernière sync avant de partir
   document.querySelectorAll('[data-action="logout"]').forEach(btn =>
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       if (!confirm('Se déconnecter ?')) return;
+      try { await sync.pushNow(); } catch { /* offline ok */ }
       localStorage.removeItem('kivu.token');
       store.set('authToken', null);
       store.set('onboardingCompleted', false);
       if (window.__KIVU__?.toast) window.__KIVU__.toast('Déconnecté', { type: 'info' });
       setTimeout(() => location.hash = '#/login', 100);
     })
+  );
+
+  // Manual cloud sync
+  document.querySelectorAll('[data-action="cloud-sync-now"]').forEach(btn =>
+    btn.addEventListener('click', () => sync.syncNow())
   );
 
   // Storage

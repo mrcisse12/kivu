@@ -4636,3 +4636,81 @@ html[data-theme="dark"] .story-foot {
   background: var(--surface);
   border-color: #2A3550;
 }
+
+/* ============================================================
+   SYNC INDICATOR — floating pill (bottom-right, above bottom-nav)
+   ============================================================ */
+.sync-indicator {
+  position: fixed;
+  bottom: 82px; /* sits just above the 64px bottom-nav */
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px 5px 9px;
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--sync-color, var(--text-tertiary));
+  box-shadow: 0 2px 10px rgba(0,0,0,.12), 0 0 0 1px var(--divider);
+  cursor: pointer;
+  z-index: 200;
+  transition: color 0.35s ease, opacity 0.35s ease, transform 0.2s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.sync-indicator:hover {
+  transform: scale(1.06);
+  box-shadow: 0 4px 16px rgba(0,0,0,.18);
+}
+.sync-indicator:active {
+  transform: scale(0.96);
+}
+
+/* On desktop (sidebar present) move to bottom-right of content area */
+@media (min-width: 768px) {
+  .sync-indicator {
+    bottom: 20px;
+    right: 20px;
+  }
+}
+
+/* The colored dot */
+.sync-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sync-color, var(--text-tertiary));
+  flex-shrink: 0;
+  transition: background 0.35s ease;
+}
+
+/* Pulse animation for "syncing" state */
+.sync-indicator[data-status="syncing"] .sync-dot {
+  animation: sync-pulse 1s ease-in-out infinite;
+}
+@keyframes sync-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* Success state: briefly go green */
+.sync-indicator[data-status="success"] { color: var(--success); }
+.sync-indicator[data-status="success"] .sync-dot { background: var(--success); }
+
+/* Error state */
+.sync-indicator[data-status="error"] { color: var(--error); }
+.sync-indicator[data-status="error"] .sync-dot { background: var(--error); }
+
+/* Offline */
+.sync-indicator[data-status="offline"] { color: var(--warning); }
+.sync-indicator[data-status="offline"] .sync-dot { background: var(--warning); }
+
+/* Dark-mode refinement */
+html[data-theme="dark"] .sync-indicator {
+  background: var(--surface);
+  box-shadow: 0 2px 12px rgba(0,0,0,.35), 0 0 0 1px var(--divider);
+}

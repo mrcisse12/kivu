@@ -24,6 +24,10 @@ from routes.diaspora_routes import diaspora_bp
 from routes.assistant_routes import assistant_bp
 from routes.user_routes import user_bp
 from routes.economics_routes import economics_bp
+from routes.sync_routes import sync_bp
+
+# Force-import models so db.create_all() picks them up
+import models  # noqa: F401
 
 
 def create_app(config_class=Config):
@@ -49,6 +53,7 @@ def create_app(config_class=Config):
     app.register_blueprint(assistant_bp, url_prefix=f"{api_prefix}/assistant")
     app.register_blueprint(user_bp, url_prefix=f"{api_prefix}/users")
     app.register_blueprint(economics_bp, url_prefix=f"{api_prefix}/economics")
+    app.register_blueprint(sync_bp, url_prefix=f"{api_prefix}/sync")
 
     # Health check
     @app.route("/")

@@ -12,6 +12,7 @@ import { navigate } from '../router.js';
 import { icons } from '../components/icons.js';
 import { mascot } from '../components/mascot.js';
 import { api } from '../services/api.js';
+import { sync } from '../services/sync.js';
 import { t } from '../i18n/index.js';
 
 let mode = 'choice';   // 'choice' | 'email-login' | 'email-signup'
@@ -328,6 +329,9 @@ function completeAuth(res, toastMsg) {
   store.set('authToken', res?.token || null);
   store.set('onboardingCompleted', true);
   busy = false; error = null;
+  // Try to pull any cloud progress for this account so the user picks up
+  // where they left off on another device.
+  sync.pull().catch(() => { /* offline or first device, no problem */ });
   if (window.__KIVU__?.toast) {
     window.__KIVU__.toast(toastMsg, { type: 'success' });
   }
