@@ -1,5 +1,6 @@
 import { icons } from './icons.js';
-import { t } from '../i18n/index.js';
+import { t }     from '../i18n/index.js';
+import { store } from '../store.js';
 
 function navItems() {
   return [
@@ -17,6 +18,36 @@ function navItems() {
     { path: '/radio',         icon: icons.speaker,       label: t('nav.radio') },
     { path: '/profile',       icon: icons.profile,       label: t('nav.profile') }
   ];
+}
+
+function renderNavUserCard() {
+  const user = store.get('user');
+  if (!user || user.guest) {
+    return `
+      <button class="nav-user-card nav-user-card--guest" data-nav="/login">
+        ${icons.profile(18)}
+        <span class="text-sm font-semibold">Se connecter</span>
+      </button>
+    `;
+  }
+  const xpPct = Math.round(Math.min(100,
+    ((user.stats?.xp || 0) / (user.stats?.nextLevelXP || 500)) * 100
+  ));
+  return `
+    <button class="nav-user-card" data-nav="/profile" aria-label="Mon profil">
+      <div class="nav-user-card__avatar">${user.avatar || '🧑🏾'}</div>
+      <div class="nav-user-card__body">
+        <div class="nav-user-card__name">${(user.name || 'KIVU').split(' ')[0]}</div>
+        <div class="nav-user-card__xp">
+          <div class="nav-xp-bar">
+            <div class="nav-xp-fill" style="width:${xpPct}%"></div>
+          </div>
+          <span class="text-xs" style="color:var(--kivu-accent); font-weight:700;">Niv. ${user.stats?.level || 1}</span>
+        </div>
+      </div>
+      <span class="nav-streak">🔥${user.stats?.streak || 0}</span>
+    </button>
+  `;
 }
 
 export function renderDesktopNav(currentPath) {
@@ -52,8 +83,12 @@ export function renderDesktopNav(currentPath) {
         `;
       }).join('')}
 
+      <!-- User card at bottom -->
       <div class="desktop-nav-footer">
-        <div class="text-xs text-muted">v2.0 — Science Fest 2026</div>
+        ${renderNavUserCard()}
+        <div class="text-xs text-muted" style="text-align:center; padding-top:8px;">
+          v2.0 — Science Fest Africa 2026
+        </div>
       </div>
     </aside>
   `;

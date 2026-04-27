@@ -474,6 +474,7 @@ function startMeeting(rerender) {
   elapsedSec  = 0;
   isSpeaking  = false;
   view        = 'meeting';
+  document.body.classList.add('in-meeting');
   rerender();
 
   // Elapsed clock
@@ -495,6 +496,7 @@ function endMeeting(rerender) {
   stopListening?.(); stopListening = null;
   isSpeaking = false;
   view = 'list';
+  document.body.classList.remove('in-meeting');
   transcript = [];
   elapsedSec = 0;
   rerender();

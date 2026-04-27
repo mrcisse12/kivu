@@ -5457,3 +5457,83 @@ html[data-theme="dark"] .lb-row--me {
 /* Dark tweaks */
 html[data-theme="dark"] .mp-meeting-shell { background: var(--bg); }
 html[data-theme="dark"] .mp-pcard { background: var(--bg); }
+
+/* ============================================================
+   DESKTOP NAV — User card at bottom
+   ============================================================ */
+.nav-user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--r-lg);
+  background: var(--bg);
+  border: 1.5px solid var(--divider);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  text-align: left;
+  margin-bottom: 8px;
+}
+.nav-user-card:hover {
+  background: color-mix(in srgb, var(--kivu-primary) 8%, var(--bg));
+  border-color: var(--kivu-primary);
+}
+.nav-user-card--guest {
+  color: var(--kivu-primary);
+  justify-content: center;
+  background: color-mix(in srgb, var(--kivu-primary) 8%, transparent);
+}
+.nav-user-card__avatar {
+  font-size: 28px;
+  flex-shrink: 0;
+  line-height: 1;
+  width: 36px; height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-user-card__body {
+  flex: 1;
+  min-width: 0;
+}
+.nav-user-card__name {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav-user-card__xp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+}
+.nav-xp-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--divider);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.nav-xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1CB0F6, #FF9600);
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+.nav-streak {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--kivu-accent);
+  flex-shrink: 0;
+}
+
+/* Hide bottom-nav + sync-indicator during active meetings */
+body.in-meeting .bottom-nav,
+body.in-meeting .sync-indicator { display: none !important; }
+body.in-meeting main.screen {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
