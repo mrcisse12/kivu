@@ -34,5 +34,8 @@ export default defineConfig({
       }
     })
   ],
-  server: { port: 5173, host: true }
+  server: { port: 5173, host: true },
+  build: {
+    chunkSizeWarningLimit: 600 // KIVU is a rich SPA — single chunk is acceptable for demo
+  }
 });
