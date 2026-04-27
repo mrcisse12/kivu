@@ -437,10 +437,22 @@ function renderQuestsTab() {
 }
 
 function renderSkillsTab() {
+  // Derive skill levels from completed lessons
+  const lessons = store.get('lessons') || {};
+  const completedCount = (lessons.completed || []).length;
+  // Each completed lesson contributes roughly to one skill category
+  // Skills unlock progressively as lessons are completed
+  const xp = store.get('user')?.stats?.xp || 0;
+  const dynamicSkills = SKILLS.map((s, i) => {
+    // Stagger: each skill starts unlocking every 2 lessons
+    const base = Math.max(0, completedCount - i * 2);
+    const liveLevel = Math.min(s.max, Math.floor(base * 0.8) + Math.floor(xp / 500));
+    return { ...s, level: Math.max(liveLevel, s.level > 5 ? s.level - 5 : 0) };
+  });
   return `
     <h2 class="font-display font-bold text-lg mb-sm">Vos compétences</h2>
     <div class="grid grid-2 mb-lg">
-      ${SKILLS.map(s => `
+      ${dynamicSkills.map(s => `
         <div class="card skill-card">
           <div class="flex justify-between items-center mb-sm">
             <span class="skill-emoji" style="background:${s.color}1f; color:${s.color};">${s.emoji}</span>

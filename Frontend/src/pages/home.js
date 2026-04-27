@@ -124,25 +124,7 @@ export function renderHome() {
     </div>
 
     <!-- Défi du jour -->
-    <div class="hero-card grad-sunset mb-lg" style="position:relative; overflow:hidden;">
-      <span class="orb orb--accent" style="width:140px;height:140px;top:-50px;right:-30px;opacity:0.3"></span>
-      <div style="position:relative;z-index:1;">
-        <div class="flex justify-between items-center mb-sm">
-          <span class="chip chip-white">⚡ Défi du jour</span>
-          <span class="chip chip-white">+150 XP</span>
-        </div>
-        <h3 class="text-lg font-bold mb-xs">Apprenez 5 salutations en Swahili</h3>
-        <div class="flex justify-between items-center mt-sm">
-          <div>
-            <div class="progress-bar" style="background:rgba(255,255,255,0.22); max-width:160px;">
-              <div class="progress-fill" style="width:60%; background:white;"></div>
-            </div>
-            <span class="text-xs mt-xs" style="opacity:0.92">3 / 5 complétées</span>
-          </div>
-          <button class="btn btn-white" data-nav="/learn">Continuer</button>
-        </div>
-      </div>
-    </div>
+    ${renderDailyChallenge()}
 
     <!-- Langues à sauver -->
     <div class="section-head mb-sm">
@@ -232,6 +214,44 @@ function renderDailyGoal(user) {
         </div>
         <div class="progress-bar progress-bar--thin mt-sm">
           <div class="progress-fill" style="width:${pct}%; background:var(--grad-hero);"></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDailyChallenge() {
+  // Real challenge: complete N lessons today
+  const today = new Date().toISOString().slice(0, 10);
+  const lessons = store.get('lessons') || {};
+  const LANG_LABELS_SHORT = { swa:'Swahili', wol:'Wolof', bam:'Bambara', hau:'Haoussa', yor:'Yoruba', zul:'Zulu', ibo:'Igbo', fra:'Français' };
+  const lang = lessons.targetLang || 'swa';
+  const langName = LANG_LABELS_SHORT[lang] || lang;
+  const todayDone = (lessons.completed || []).filter(c => (c.date || '').slice(0, 10) === today).length;
+  const target = 3; // 3 leçons = défi du jour
+  const pct = Math.min(100, Math.round((todayDone / target) * 100));
+  const done = todayDone >= target;
+  return `
+    <div class="hero-card grad-sunset mb-lg" style="position:relative; overflow:hidden;">
+      <span class="orb orb--accent" style="width:140px;height:140px;top:-50px;right:-30px;opacity:0.3"></span>
+      <div style="position:relative;z-index:1;">
+        <div class="flex justify-between items-center mb-sm">
+          <span class="chip chip-white">⚡ Défi du jour</span>
+          <span class="chip chip-white">+${done ? '🏆 Terminé !' : '150 XP'}</span>
+        </div>
+        <h3 class="text-lg font-bold mb-xs">
+          ${done ? '🎉 Défi accompli !' : `Terminez ${target} leçons de ${langName} aujourd'hui`}
+        </h3>
+        <div class="flex justify-between items-center mt-sm">
+          <div>
+            <div class="progress-bar" style="background:rgba(255,255,255,0.22); max-width:160px;">
+              <div class="progress-fill" style="width:${pct}%; background:white;"></div>
+            </div>
+            <span class="text-xs mt-xs" style="opacity:0.92">${todayDone} / ${target} leçons complétées</span>
+          </div>
+          ${done
+            ? `<span class="chip chip-white">✓ Bravo !</span>`
+            : `<button class="btn btn-white" data-nav="/learn">Continuer</button>`}
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { LANGUAGES } from '../data/languages.js';
 import { icons } from '../components/icons.js';
 import { recorder } from '../services/recorder.js';
+import { store } from '../store.js';
 
 const CATEGORIES = [
   { emoji: '📖', title: 'Contes & légendes', count: 1247, color: 'var(--kivu-primary)' },
@@ -257,11 +258,16 @@ renderPreserve.mount = () => {
       const title = document.getElementById('record-title-input')?.value?.trim()
         || `Enregistrement du ${formatDate(savingFor.createdAt)}`;
       recorder.save({ ...savingFor, title });
+      // Increment contributions count → unlocks 'Gardien' badge
+      store.update('user', u => ({
+        ...u,
+        stats: { ...u.stats, contributionsCount: (u.stats.contributionsCount || 0) + 1 }
+      }));
       savingFor = null;
       elapsedMs = 0;
       rerender();
       if (window.__KIVU__?.toast)
-        window.__KIVU__.toast('Sauvegardé dans votre archive', { type: 'success' });
+        window.__KIVU__.toast('Sauvegardé dans votre archive ! +1 contribution 🛡️', { type: 'success', duration: 2500 });
     })
   );
 
