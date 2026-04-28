@@ -178,9 +178,7 @@ export function renderHome() {
     <!-- Communauté -->
     <h2 class="font-display font-bold text-lg mb-sm">${t('home.sectionCommunity')}</h2>
     <div class="flex flex-col gap-xs mb-lg">
-      ${renderCommunityPost('👵🏾', 'Mamie Awa', 'a enregistré 12 proverbes Wolof', 'il y a 3 h')}
-      ${renderCommunityPost('👨🏾‍🎓', 'Koffi', 'a terminé le niveau 15 en Dioula', 'il y a 5 h')}
-      ${renderCommunityPost('👩🏾‍⚕️', 'Dr. Amina', 'a aidé 47 patients via KIVU', 'hier')}
+      ${renderCommunityPosts()}
     </div>
   `;
 }
@@ -330,6 +328,46 @@ function renderCommunityPost(avatar, name, action, time) {
       <div class="text-xs text-muted">${time}</div>
     </div>
   `;
+}
+
+function renderCommunityPosts() {
+  const user = store.get('user') || {};
+  const lessons = store.get('lessons') || {};
+  const completedCount = (lessons.completed || []).length;
+  const streak = user.stats?.streak || 0;
+  const contributions = user.stats?.contributionsCount || 0;
+  const firstName = (user.name || 'Vous').split(' ')[0];
+  const avatar = user.avatar || '🧑🏾';
+
+  // Build dynamic posts based on user's real achievements
+  const posts = [];
+
+  if (completedCount > 0) {
+    const lang = { swa:'Swahili', wol:'Wolof', bam:'Bambara', hau:'Haoussa', yor:'Yoruba', zul:'Zulu', ibo:'Igbo', dyu:'Dioula' }[lessons.targetLang] || 'Swahili';
+    posts.push({ avatar, name: firstName + ' (vous)', action: `a complété ${completedCount} leçon${completedCount > 1 ? 's' : ''} de ${lang}`, time: 'aujourd\'hui' });
+  }
+  if (streak >= 3) {
+    posts.push({ avatar, name: firstName + ' (vous)', action: `maintient une série de ${streak} jours consécutifs 🔥`, time: 'en cours' });
+  }
+  if (contributions > 0) {
+    posts.push({ avatar, name: firstName + ' (vous)', action: `a contribué ${contributions} enregistrement${contributions > 1 ? 's' : ''} de préservation 🛡️`, time: 'récemment' });
+  }
+
+  // Fill up to 3 with community members
+  const COMMUNITY_POOL = [
+    { avatar: '👵🏾', name: 'Mamie Awa', action: 'a enregistré 12 proverbes Wolof', time: 'il y a 3 h' },
+    { avatar: '👨🏾‍🎓', name: 'Koffi M.', action: 'a terminé le niveau 15 en Dioula', time: 'il y a 5 h' },
+    { avatar: '👩🏾‍⚕️', name: 'Dr. Amina', action: 'a traduit 47 termes médicaux', time: 'hier' },
+    { avatar: '👨🏽‍💼', name: 'Seun A.', action: 'a partagé 8 proverbes Yoruba', time: 'il y a 2 h' },
+    { avatar: '👩🏿‍🎤', name: 'Fatou D.', action: 'est passée au niveau 20 en Swahili', time: 'il y a 1 h' },
+  ];
+
+  while (posts.length < 3) {
+    const pool = COMMUNITY_POOL[posts.length % COMMUNITY_POOL.length];
+    posts.push(pool);
+  }
+
+  return posts.slice(0, 3).map(p => renderCommunityPost(p.avatar, p.name, p.action, p.time)).join('');
 }
 
 function computeGreeting() {

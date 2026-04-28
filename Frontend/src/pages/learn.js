@@ -521,6 +521,31 @@ function renderProgressTab() {
   `;
 }
 
+/* ── Confetti helper (quiz) ──────────────────────────────── */
+function launchQuizConfetti(score, total) {
+  if (score < Math.ceil(total / 2)) return; // no confetti for < 50%
+  const COLORS = ['#174E9C','#F2952D','#FFB859','#2D9E73','#8C40AD','#EB4D4D','#1CB0F6'];
+  const count = score === total ? 60 : 30;
+  const wrap = document.createElement('div');
+  wrap.className = 'confetti-wrap';
+  document.body.appendChild(wrap);
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.cssText = [
+      `left: ${Math.random() * 100}%`,
+      `background: ${COLORS[i % COLORS.length]}`,
+      `width: ${6 + Math.random() * 8}px`,
+      `height: ${6 + Math.random() * 8}px`,
+      `border-radius: ${Math.random() > 0.5 ? '50%' : '2px'}`,
+      `animation-delay: ${Math.random() * 0.8}s`,
+      `animation-duration: ${1.8 + Math.random() * 1}s`
+    ].join(';');
+    wrap.appendChild(p);
+  }
+  setTimeout(() => wrap.remove(), 3200);
+}
+
 renderLearn.mount = () => {
   const main = document.querySelector('main.screen');
   if (!main) return;
@@ -633,6 +658,8 @@ renderLearn.mount = () => {
     btn.addEventListener('click', () => {
       if (quizIndex >= quizQuestions.length - 1) {
         quizFinished = true;
+        // Confetti on quiz finish
+        launchQuizConfetti(quizScore, quizQuestions.length);
         // Persist XP + streak + level-up
         const xpGain = quizScore * LANG_LABELS[quizLang].xpPerCorrect;
         store.update('user', u => {

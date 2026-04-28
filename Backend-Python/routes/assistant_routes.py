@@ -6,6 +6,31 @@ from auth import jwt_required_optional
 assistant_bp = Blueprint("assistant", __name__)
 
 
+def _anthropic_chat(messages, target_language="fra"):
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key or os.environ.get("OPENAI_API_KEY", ""):
+        return None
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        system_msg = (
+            f"Tu es KIVU, un tuteur bienveillant spécialisé dans les langues africaines. "
+            f"Tu enseignes de manière naturelle et contextuelle en {target_language}. "
+            f"Tu encourages, tu corriges avec douceur, tu célèbres les progrès."
+        )
+        resp = client.messages.create(
+            model="claude-3-5-haiku-20241022",
+            system=system_msg,
+            messages=messages,
+            temperature=0.7,
+            max_tokens=500,
+        )
+        return resp.content[0].text.strip()
+    except Exception as e:
+        print(f"[KIVU Assistant] Anthropic fallback: {e}")
+        return None
+
+
 def _openai_chat(messages, target_language="fra"):
     api_key = os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
@@ -37,7 +62,7 @@ def chat():
     messages = data.get("messages", [])
     target = data.get("targetLanguage", "fra")
 
-    reply = _openai_chat(messages, target)
+    reply = _openai_chat(messages, target) or _anthropic_chat(messages, target)
     if not reply:
         # Réponses offline pré-calculées
         last = (messages[-1].get("content", "") if messages else "").lower()
