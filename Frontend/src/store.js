@@ -67,6 +67,11 @@ const defaultState = {
     received: [],           // encouragements reçus
     suggestionsHidden: [],  // names of dismissed suggestions
     seeded: false
+  },
+  // Assistant IA conversationnel
+  assistant: {
+    conversations: [],      // [{ id, title, messages: [], createdAt, updatedAt }]
+    activeId: null          // ID of the currently-open conversation
   }
 };
 
@@ -85,7 +90,8 @@ function load() {
       preferences: { ...defaultState.preferences, ...(persisted.preferences || {}) },
       user: { ...defaultState.user, ...(persisted.user || {}), stats: { ...defaultState.user.stats, ...(persisted.user?.stats || {}) } },
       dictionary: { ...defaultState.dictionary, ...(persisted.dictionary || {}) },
-      friends: { ...defaultState.friends, ...(persisted.friends || {}) }
+      friends: { ...defaultState.friends, ...(persisted.friends || {}) },
+      assistant: { ...defaultState.assistant, ...(persisted.assistant || {}) }
     };
   } catch {
     return defaultState;

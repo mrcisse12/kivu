@@ -1,279 +1,607 @@
+/**
+ * KIVU — Assistant IA conversationnel premium.
+ *
+ * - Conversations multiples persistées avec drawer
+ * - Welcome screen avec 6 exemples de prompts
+ * - Markdown renderer (titres, gras, listes, code)
+ * - Typewriter effect simulé (caractère par caractère)
+ * - Bouton stop / regenerate / copy / nouvelle conversation
+ * - Voice input (mic)
+ * - TTS auto sur réponse (toggle)
+ * - Affiche le modèle utilisé (Anthropic Sonnet, OpenAI, Offline)
+ */
+
 import { icons } from '../components/icons.js';
 import { store } from '../store.js';
 import { speech } from '../services/speech.js';
-import { api }   from '../services/api.js';
+import { fx } from '../services/audio-fx.js';
+import { renderMarkdown, stripMarkdown } from '../services/markdown.js';
+import {
+  listConversations,
+  getActiveConversation,
+  setActiveConversation,
+  newConversation,
+  deleteConversation,
+  pushMessage,
+  updateLastMessage,
+  popLastMessage,
+  sendToAssistant,
+  WELCOME_EXAMPLES
+} from '../services/assistant.js';
 
-/* ── Contextual AI response engine ─────────────────────────── */
-// Keyword-based dispatch — gives realistic, varied replies
-const AI_RULES = [
-  // Greetings
-  { re: /^(bonjour|salut|hello|bonsoir|hi\b)/i, replies: [
-    'Bonjour ! 🌍 Prêt à explorer une nouvelle langue africaine aujourd\'hui ?',
-    'Salut ! Kivi est là pour t\'aider. Quelle langue veux-tu apprendre aujourd\'hui ?',
-  ]},
-  // Market / shopping
-  { re: /march[eé]|achet|vend|prix|combien|fcfa|monnaie/i, replies: [
-    'Super contexte ! En Swahili : **"Bei gani?"** = Combien ça coûte ? 🛒\nEssaie de le répéter à voix haute !',
-    'En Haoussa, au marché tu peux dire : **"Nawa ne?"** (combien ?) et **"Yi arha"** (c\'est trop cher). 💰',
-    'En Dioula : **"Joli foli yen?"** = Combien ça coûte ? C\'est la phrase essentielle du marché ! 🥭',
-  ]},
-  // Greetings / politeness
-  { re: /polites|bonjour|saluer|accueillir|bienvenu/i, replies: [
-    'En Wolof : **"Nanga def ?"** = Comment vas-tu ? Et la réponse : **"Maa ngi fi rekk"** (Je suis là, juste ici) 🤝',
-    'En Swahili : **"Habari yako ?"** = Comment ça va ? → **"Nzuri sana !"** (Très bien !)',
-  ]},
-  // Numbers
-  { re: /chiffr|nomb|compt|1|2|3|4|5/i, replies: [
-    '🔢 En Swahili, de 1 à 5 : moja, mbili, tatu, nne, tano. Répétons ensemble !',
-    'En Haoussa : ɗaya (1), biyu (2), uku (3), huɗu (4), biyar (5). Tu veux continuer jusqu\'à 10 ?',
-  ]},
-  // Food
-  { re: /mang[eé]r|nourriture|repas|faim|soif|eau|boire|pain|riz/i, replies: [
-    'En Swahili : **"Chakula"** = nourriture, **"Maji"** = eau, **"Njaa"** = faim. 🍚\nTu veux le menu complet ?',
-    'En Wolof : **"Lekk"** = manger, **"Dëkk"** = vivre, **"Ndox"** = eau. La survie en 3 mots ! 💧',
-  ]},
-  // Travel
-  { re: /voyage|trajet|route|aller|venir|partir|ici|là|où/i, replies: [
-    '🧭 En Swahili : **"Wapi...?"** = Où est... ? Ex : **"Wapi hospitali ?"** = Où est l\'hôpital ?',
-    'En Haoussa : **"Ina..."** = Où est... ? **"Ina gida ?"** = Où est la maison ? Très utile en voyage !',
-  ]},
-  // Lesson / learning
-  { re: /leçon|apprendre|exercice|quiz|test|pratique|niveau/i, replies: [
-    '📚 Tu peux aller dans la section **Apprentissage** pour suivre ta leçon du jour avec des quiz interactifs !',
-    'Je vois que tu es motivé ! 🔥 Ta prochaine leçon t\'attend dans l\'onglet **Apprendre**. Veux-tu un avant-goût ici ?',
-  ]},
-  // Default (catch-all, varied)
-  { re: /./, replies: [
-    'Intéressant ! Quelle langue africaine veux-tu explorer — Swahili 🇹🇿, Haoussa 🇳🇬, Wolof 🇸🇳, ou Dioula 🇨🇮 ?',
-    '💡 Bon à savoir ! Je peux t\'enseigner des phrases pratiques, des proverbes ou t\'aider avec ta leçon du jour.',
-    'Je t\'écoute ! Tu veux apprendre du vocabulaire, pratiquer une conversation, ou comprendre la culture ?',
-    'Super ! Dis-moi dans quel contexte tu veux utiliser cette langue — je t\'adapte l\'apprentissage. 🌍',
-  ]},
-];
+let drawerOpen = false;
+let isStreaming = false;
+let streamCancel = null;
+let lastProvider = '';
+let lastModel = '';
+let inputValue = '';
+let speakReplies = false;   // TTS auto-read AI replies
 
-function getAiReply(userText) {
-  for (const rule of AI_RULES) {
-    if (rule.re.test(userText)) {
-      const pool = rule.replies;
-      return pool[Math.floor(Math.random() * pool.length)];
-    }
-  }
-  return 'Je réfléchis… 🤔';
+/* ─── Helpers ──────────────────────────────────────────── */
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-// Render markdown-like bold in bubbles
-function formatContent(text) {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>');
+function relTime(iso) {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  const min = Math.round(ms / 60000);
+  if (min < 1) return 'à l\'instant';
+  if (min < 60) return `${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `${h} h`;
+  const d = Math.round(h / 24);
+  return `${d} j`;
 }
 
-let messages = [
-  { from: 'ai', content: 'Bonjour ! Je suis **Kivi**, ton tuteur IA. 🌍\nQuelle langue africaine veux-tu explorer aujourd\'hui ?' }
-];
-
-const SUGGESTIONS = [
-  'Leçon du jour',
-  'Phrases au marché',
-  'Salutations',
-  'Chiffres 1-10',
-  'Nourriture',
-  'Voyager'
-];
-
-function getContextChips() {
-  const user    = store.get('user') || {};
-  const lessons = store.get('lessons') || {};
-  const streak  = user.stats?.streak || 0;
-  const level   = user.stats?.level  || 1;
-  const lang    = user.preferredLanguage || 'swa';
-  const LANG_NAMES = { fra:'Français', eng:'Anglais', swa:'Swahili', wol:'Wolof', bam:'Bambara', dyu:'Dioula', hau:'Haoussa', yor:'Yoruba' };
-  return [
-    { emoji: '📖', label: `${LANG_NAMES[lang] || lang} niv. ${level}`, color: 'primary' },
-    { emoji: '🔥', label: `${streak} j de série`, color: 'error' },
-    { emoji: '⚡', label: `${user.stats?.xp || 0} XP`, color: 'accent' },
-  ];
+function providerBadge() {
+  if (!lastProvider) return '';
+  const labels = {
+    anthropic: { name: 'Claude Sonnet 4.5', color: '#D97757', icon: '✨' },
+    openai:    { name: 'GPT-4o',            color: '#10A37F', icon: '🤖' },
+    offline:   { name: 'Mode hors-ligne',   color: '#999',    icon: '📴' }
+  };
+  const meta = labels[lastProvider] || labels.offline;
+  return `
+    <span class="ai-provider-badge" style="--provider-color: ${meta.color};">
+      ${meta.icon} ${meta.name}
+    </span>
+  `;
 }
+
+/* ─── Main render ──────────────────────────────────────── */
 
 export function renderAssistant() {
+  const active = getActiveConversation();
+  const conversations = listConversations();
+  const isEmpty = !active || (active.messages || []).length === 0;
+
   return `
-    <div class="screen-header">
-      <div class="flex items-center gap-sm">
-        <span class="screen-icon" style="background:rgba(230,90,140,0.15); color:var(--color-assistant);">
-          ${icons.assistant(28)}
-        </span>
-        <div>
-          <div class="screen-title">Assistant IA</div>
-          <div class="screen-subtitle">Ton tuteur personnel qui t'apprend en vivant</div>
+    <div class="assistant-page">
+      <!-- Header -->
+      <header class="assistant-header">
+        <button class="icon-btn" data-action="toggle-drawer" aria-label="Conversations" title="Mes conversations">
+          ${icons.users(20)}
+          ${conversations.length > 0 ? `<span class="ai-conv-count">${conversations.length}</span>` : ''}
+        </button>
+        <div class="assistant-header__title">
+          <span class="screen-icon" style="background:rgba(217,119,87,0.15); color:#D97757;">
+            ${icons.assistant(22)}
+          </span>
+          <div>
+            <div class="font-display font-bold" style="font-size:1.05rem;">Kivi · Assistant IA</div>
+            <div class="text-xs text-muted">${active ? escapeHtml(active.title) : 'Nouvelle discussion'}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-xs">
+          ${providerBadge()}
+          <button class="icon-btn" data-action="new-chat" aria-label="Nouvelle conversation" title="Nouvelle conversation">
+            ${icons.plus(20)}
+          </button>
+        </div>
+      </header>
+
+      <!-- Conversations drawer -->
+      ${drawerOpen ? renderDrawer(conversations, active?.id) : ''}
+
+      <!-- Messages stream -->
+      <div class="assistant-stream" id="assistant-stream">
+        ${isEmpty ? renderWelcome() : renderMessages(active.messages)}
+        ${isStreaming ? renderTypingBubble() : ''}
+      </div>
+
+      <!-- Input -->
+      <div class="assistant-input-wrap">
+        ${isStreaming ? `
+          <button class="btn btn-ghost btn-sm assistant-stop"
+                  data-action="stop-stream" style="margin-bottom: 8px;">
+            ⏹ Arrêter la génération
+          </button>
+        ` : ''}
+        <div class="chat-input">
+          <button class="icon-btn icon-btn--mic" data-action="voice-input" aria-label="Dictée vocale" title="Dictée vocale">
+            ${icons.mic(20, 'currentColor')}
+          </button>
+          <textarea id="assistant-input"
+                    class="form-input chat-input__field assistant-textarea"
+                    placeholder="Pose ta question à Kivi… (Maj+Entrée pour ligne)"
+                    rows="1"
+                    aria-label="Message">${escapeHtml(inputValue)}</textarea>
+          <button class="icon-btn icon-btn--send" data-action="send" aria-label="Envoyer"
+                  ${isStreaming ? 'disabled' : ''}>
+            ${icons.send(20, 'white')}
+          </button>
+        </div>
+        <div class="assistant-foot text-xs text-muted">
+          <button class="link-btn" data-action="toggle-tts" style="font-weight: 600;">
+            ${speakReplies ? '🔊 Lecture audio active' : '🔇 Lecture audio'}
+          </button>
+          <span style="opacity:0.6;">·</span>
+          <span>Kivi peut se tromper — vérifie les infos importantes.</span>
         </div>
       </div>
     </div>
+  `;
+}
 
-    <!-- Context bar -->
-    <div class="flex gap-xs mb-md scroll-x">
-      <div class="scroll-x-row">
-        ${getContextChips().map(c => `
-          <span class="chip chip-${c.color}">${c.emoji} ${c.label}</span>
-        `).join('')}
+/* ─── Welcome screen ───────────────────────────────────── */
+
+function renderWelcome() {
+  const user = store.get('user') || {};
+  const firstName = (user.name || '').split(' ')[0] || 'toi';
+  return `
+    <div class="ai-welcome">
+      <div class="ai-welcome__hero">
+        <div class="ai-welcome__icon">${icons.assistant(48, 'white')}</div>
+        <h1 class="font-display font-bold" style="font-size: 1.75rem; margin: 16px 0 8px;">
+          Bonjour ${escapeHtml(firstName)} 👋
+        </h1>
+        <p class="text-sm text-muted" style="max-width: 440px; margin: 0 auto 24px;">
+          Je suis <strong>Kivi</strong>, ton assistant IA propulsé par <strong>Claude Sonnet 4.5</strong>.
+          Pose-moi n'importe quelle question — sur les langues africaines, la culture,
+          les sciences, le code, ou tout autre sujet.
+        </p>
       </div>
-    </div>
 
-    <!-- Messages -->
-    <div class="chat-stream mb-md" id="chat-stream">
-      ${messages.map(m => renderBubble(m)).join('')}
-    </div>
-
-    <!-- Suggestions -->
-    <div class="scroll-x mb-md">
-      <div class="scroll-x-row">
-        ${SUGGESTIONS.map(s => `
-          <button class="chip chip-suggestion" data-action="suggest" data-text="${s}">${s}</button>
-        `).join('')}
+      <div class="ai-welcome__examples">
+        <div class="text-xs text-muted mb-sm" style="text-align: center; letter-spacing: 0.6px; text-transform: uppercase; font-weight: 700;">
+          Exemples pour démarrer
+        </div>
+        <div class="grid grid-2" style="gap: 10px;">
+          ${WELCOME_EXAMPLES.map(ex => `
+            <button class="ai-example-card" data-action="example" data-prompt="${escapeHtml(ex.prompt)}">
+              <span class="ai-example-card__emoji" aria-hidden="true">${ex.emoji}</span>
+              <div class="ai-example-card__body">
+                <div class="font-semibold text-sm">${ex.label}</div>
+                <div class="text-xs text-muted ai-example-card__hint">${escapeHtml(ex.prompt)}</div>
+              </div>
+            </button>
+          `).join('')}
+        </div>
       </div>
-    </div>
 
-    <!-- Input -->
-    <div class="chat-input">
-      <button class="icon-btn icon-btn--mic" aria-label="Dictée vocale">
-        ${icons.mic(20, 'currentColor')}
-      </button>
-      <input id="assistant-input"
-             class="form-input chat-input__field"
-             placeholder="Écris à ton tuteur…"
-             aria-label="Message"/>
-      <button class="icon-btn icon-btn--send" data-action="send-message" aria-label="Envoyer">
-        ${icons.send(20, 'white')}
-      </button>
+      <div class="ai-welcome__capabilities">
+        <div class="ai-cap"><span aria-hidden="true">🌍</span> 2 000+ langues africaines</div>
+        <div class="ai-cap"><span aria-hidden="true">📚</span> Histoire & culture</div>
+        <div class="ai-cap"><span aria-hidden="true">💻</span> Code & sciences</div>
+        <div class="ai-cap"><span aria-hidden="true">✍️</span> Rédaction & créativité</div>
+      </div>
     </div>
   `;
 }
 
-function renderBubble(m) {
+/* ─── Messages ─────────────────────────────────────────── */
+
+function renderMessages(messages) {
+  return messages.map((m, i) => renderBubble(m, i, messages.length)).join('');
+}
+
+function renderBubble(m, index, total) {
   const user = store.get('user');
   const avatar = user?.avatar || '🧑🏾';
-  if (m.from === 'ai') {
+  const isLast = index === total - 1;
+
+  if (m.role === 'assistant') {
+    const html = renderMarkdown(m.content);
     return `
       <div class="bubble-row bubble-row--ai">
         <span class="bubble-avatar bubble-avatar--ai" aria-hidden="true">${icons.assistant(18, 'white')}</span>
-        <div class="bubble bubble--ai">${m.typing ? '<span class="typing-dots"><span></span><span></span><span></span></span>' : formatContent(m.content)}</div>
+        <div class="bubble bubble--ai">
+          <div class="bubble__content">${html}</div>
+          <div class="bubble__actions">
+            <button class="bubble-action" data-action="copy-msg" data-index="${index}" title="Copier">
+              ${icons.copy(14)}
+            </button>
+            <button class="bubble-action" data-action="speak-msg" data-index="${index}" title="Lire à voix haute">
+              ${icons.speaker(14)}
+            </button>
+            ${isLast ? `
+              <button class="bubble-action" data-action="regenerate" title="Régénérer cette réponse">
+                ${icons.refresh(14)}
+              </button>
+            ` : ''}
+          </div>
+        </div>
       </div>
     `;
   }
+
   return `
     <div class="bubble-row bubble-row--user">
-      <div class="bubble bubble--user">${formatContent(m.content)}</div>
+      <div class="bubble bubble--user">${escapeHtml(m.content).replace(/\n/g, '<br>')}</div>
       <span class="bubble-avatar bubble-avatar--user" aria-hidden="true">${avatar}</span>
     </div>
   `;
+}
+
+function renderTypingBubble() {
+  return `
+    <div class="bubble-row bubble-row--ai">
+      <span class="bubble-avatar bubble-avatar--ai" aria-hidden="true">${icons.assistant(18, 'white')}</span>
+      <div class="bubble bubble--ai bubble--typing">
+        <span class="typing-dots"><span></span><span></span><span></span></span>
+        <span class="text-xs text-muted" style="margin-left: 8px;">Kivi réfléchit…</span>
+      </div>
+    </div>
+  `;
+}
+
+/* ─── Drawer (conversations list) ──────────────────────── */
+
+function renderDrawer(conversations, activeId) {
+  return `
+    <aside class="ai-drawer" data-stop="true">
+      <div class="ai-drawer__head">
+        <strong>Mes conversations</strong>
+        <button class="icon-btn icon-btn--sm" data-action="toggle-drawer" aria-label="Fermer">
+          ${icons.close(18)}
+        </button>
+      </div>
+      <button class="btn btn-primary btn-full" data-action="new-chat" style="margin-bottom: 10px;">
+        ${icons.plus(14)} Nouvelle discussion
+      </button>
+      <div class="ai-drawer__list">
+        ${conversations.length === 0 ? `
+          <div class="text-xs text-muted" style="text-align: center; padding: 20px 0;">
+            Aucune conversation pour l'instant
+          </div>
+        ` : conversations.map(c => `
+          <div class="ai-conv-row ${c.id === activeId ? 'is-active' : ''}">
+            <button class="ai-conv-row__main" data-action="open-conv" data-id="${c.id}">
+              <div class="ai-conv-row__title">${escapeHtml(c.title)}</div>
+              <div class="ai-conv-row__sub">${(c.messages || []).length} message${(c.messages || []).length > 1 ? 's' : ''} · ${relTime(c.updatedAt)}</div>
+            </button>
+            <button class="icon-btn icon-btn--xs" data-action="del-conv" data-id="${c.id}" aria-label="Supprimer">
+              ${icons.trash(14)}
+            </button>
+          </div>
+        `).join('')}
+      </div>
+    </aside>
+  `;
+}
+
+/* ─── Mount / interactions ─────────────────────────────── */
+
+function rerender(scrollToBottom = false) {
+  const main = document.querySelector('main.screen');
+  if (!main) return;
+  main.innerHTML = renderAssistant();
+  renderAssistant.mount();
+  if (scrollToBottom) {
+    requestAnimationFrame(() => {
+      const stream = document.getElementById('assistant-stream');
+      if (stream) stream.scrollTop = stream.scrollHeight;
+    });
+  }
+}
+
+/** Simulate a typewriter effect on the assistant's reply */
+async function typeReply(fullText) {
+  const stream = document.getElementById('assistant-stream');
+  if (!stream) {
+    updateLastMessage(fullText);
+    rerender(true);
+    return;
+  }
+  // Find the assistant's last bubble's content node
+  const last = stream.querySelector('.bubble-row--ai:last-of-type .bubble__content');
+  if (!last) {
+    updateLastMessage(fullText);
+    rerender(true);
+    return;
+  }
+
+  const total = fullText.length;
+  // Speed: ~600 chars/sec for short, slower for long; capped to not flood RAF
+  const chunkSize = Math.max(2, Math.ceil(total / 80));
+  const intervalMs = 12;
+  let i = 0;
+  return new Promise(resolve => {
+    const tick = () => {
+      if (!isStreaming) {
+        // Cancelled — just show full
+        updateLastMessage(fullText);
+        rerender(true);
+        return resolve();
+      }
+      i = Math.min(total, i + chunkSize);
+      const partial = fullText.slice(0, i);
+      last.innerHTML = renderMarkdown(partial);
+      stream.scrollTop = stream.scrollHeight;
+      if (i >= total) {
+        // Done — persist the full reply
+        updateLastMessage(fullText);
+        return resolve();
+      }
+      setTimeout(tick, intervalMs);
+    };
+    tick();
+  });
+}
+
+async function send(text) {
+  const trimmed = (text || '').trim();
+  if (!trimmed || isStreaming) return;
+
+  // Ensure there's an active conversation
+  if (!getActiveConversation()) newConversation();
+
+  inputValue = '';
+  fx.click();
+
+  // 1. Push user message
+  pushMessage({ role: 'user', content: trimmed });
+  // 2. Push placeholder assistant message (will be filled by typewriter)
+  pushMessage({ role: 'assistant', content: '' });
+
+  isStreaming = true;
+  rerender(true);
+
+  try {
+    const { reply, provider, model } = await sendToAssistant();
+    lastProvider = provider;
+    lastModel = model;
+    // Type out the reply
+    await typeReply(reply || 'Pas de réponse.');
+    isStreaming = false;
+    rerender(true);
+
+    // TTS if enabled
+    if (speakReplies && reply && speech.ttsSupported) {
+      const plain = stripMarkdown(reply);
+      speech.speak(plain, 'fra', { rate: 1.0 });
+    }
+  } catch (err) {
+    isStreaming = false;
+    updateLastMessage(`⚠️ Désolé, une erreur s'est produite : ${err?.message || err}.\n\nLe serveur IA est peut-être hors-ligne. Réessaie dans quelques instants.`);
+    lastProvider = 'offline';
+    rerender(true);
+  }
 }
 
 renderAssistant.mount = () => {
   const main = document.querySelector('main.screen');
   if (!main) return;
 
-  const input = document.getElementById('assistant-input');
-
-  function send(text) {
-    if (!text || !text.trim()) return;
-    const userText = text.trim();
-    messages.push({ from: 'user', content: userText });
-    // Show typing indicator
-    messages.push({ from: 'ai', content: '', typing: true });
-    rerender(true);
-
-    // Try backend first, fall back to local AI rules
-    const user = store.get('user') || {};
-    const lang = user.preferredLanguage || 'fra';
-    const apiMessages = messages
-      .filter(m => !m.typing)
-      .map(m => ({ role: m.from === 'ai' ? 'assistant' : 'user', content: m.content }));
-
-    (async () => {
-      let reply;
-      try {
-        const res = await api.post('/assistant/chat', {
-          messages: apiMessages.slice(-8), // last 8 for context
-          targetLanguage: lang
-        });
-        reply = res.reply;
-      } catch {
-        // Offline / backend down → use local rules
-        reply = getAiReply(userText);
-      }
-
-      messages = messages.filter(m => !m.typing);
-      messages.push({ from: 'ai', content: reply });
-      rerender(true);
-      if (speech.ttsSupported) {
-        const plain = reply.replace(/\*\*/g, '').replace(/<br>/g, ' ').replace(/[🔢🛒💰🥭🤝💧🧭📚🔥💡🌍🤔]/g, '');
-        speech.speak(plain, 'fra');
-      }
-    })();
-  }
-
-  function rerender(scroll) {
-    main.innerHTML = renderAssistant();
-    renderAssistant.mount();
-    if (scroll) {
-      const stream = document.getElementById('chat-stream');
-      if (stream) stream.scrollTop = stream.scrollHeight;
+  // Ensure there's at least one conversation
+  if (!getActiveConversation()) {
+    const conversations = listConversations();
+    if (conversations.length > 0) {
+      setActiveConversation(conversations[0].id);
+    } else {
+      newConversation();
     }
   }
 
-  document.querySelectorAll('[data-action="send-message"]').forEach(btn =>
+  // Auto-resize textarea
+  const textarea = document.getElementById('assistant-input');
+  if (textarea) {
+    const autoResize = () => {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(120, textarea.scrollHeight) + 'px';
+    };
+    autoResize();
+    textarea.addEventListener('input', () => {
+      inputValue = textarea.value;
+      autoResize();
+    });
+    textarea.addEventListener('keydown', (e) => {
+      // Enter sends, Shift+Enter inserts newline
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        send(textarea.value);
+      }
+    });
+    // Auto-focus when not in welcome
+    if (getActiveConversation()?.messages?.length > 0) {
+      setTimeout(() => textarea.focus(), 50);
+    }
+  }
+
+  // Send button
+  document.querySelectorAll('[data-action="send"]').forEach(btn =>
     btn.addEventListener('click', () => {
-      const text = document.getElementById('assistant-input')?.value;
-      send(text);
+      const ta = document.getElementById('assistant-input');
+      if (ta) send(ta.value);
     })
   );
 
-  if (input) {
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        send(input.value);
-      }
-    });
-  }
-
-  document.querySelectorAll('[data-action="suggest"]').forEach(btn =>
-    btn.addEventListener('click', () => send(btn.dataset.text))
+  // Stop streaming
+  document.querySelectorAll('[data-action="stop-stream"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      isStreaming = false;
+      fx.click();
+      rerender(true);
+    })
   );
 
-  // Mic button — voice input for assistant
-  let stopAssistantStt = null;
-  document.querySelectorAll('.icon-btn--mic').forEach(btn =>
+  // Welcome examples
+  document.querySelectorAll('[data-action="example"]').forEach(btn =>
+    btn.addEventListener('click', () => send(btn.dataset.prompt))
+  );
+
+  // Toggle drawer
+  document.querySelectorAll('[data-action="toggle-drawer"]').forEach(btn =>
     btn.addEventListener('click', () => {
-      if (stopAssistantStt) {
-        stopAssistantStt();
-        stopAssistantStt = null;
-        btn.style.color = '';
+      drawerOpen = !drawerOpen;
+      fx.click();
+      rerender();
+    })
+  );
+
+  // New conversation
+  document.querySelectorAll('[data-action="new-chat"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      newConversation();
+      drawerOpen = false;
+      lastProvider = '';
+      fx.click();
+      rerender(true);
+    })
+  );
+
+  // Open existing conversation
+  document.querySelectorAll('[data-action="open-conv"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      setActiveConversation(btn.dataset.id);
+      drawerOpen = false;
+      fx.click();
+      rerender(true);
+    })
+  );
+
+  // Delete conversation
+  document.querySelectorAll('[data-action="del-conv"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      if (!confirm('Supprimer cette conversation ?')) return;
+      deleteConversation(btn.dataset.id);
+      fx.click();
+      rerender();
+    })
+  );
+
+  // Copy message
+  document.querySelectorAll('[data-action="copy-msg"]').forEach(btn =>
+    btn.addEventListener('click', async () => {
+      const idx = Number(btn.dataset.index);
+      const conv = getActiveConversation();
+      const msg = conv?.messages?.[idx];
+      if (!msg) return;
+      try {
+        await navigator.clipboard.writeText(msg.content);
+        fx.coin();
+        if (window.__KIVU__?.toast) {
+          window.__KIVU__.toast('Réponse copiée ✨', { type: 'success', duration: 1400 });
+        }
+      } catch {
+        if (window.__KIVU__?.toast) window.__KIVU__.toast('Impossible de copier', { type: 'error' });
+      }
+    })
+  );
+
+  // Speak message (TTS one-off)
+  document.querySelectorAll('[data-action="speak-msg"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const idx = Number(btn.dataset.index);
+      const conv = getActiveConversation();
+      const msg = conv?.messages?.[idx];
+      if (!msg || !speech.ttsSupported) return;
+      const plain = stripMarkdown(msg.content);
+      speech.speak(plain, 'fra', { rate: 1.0 });
+      fx.click();
+    })
+  );
+
+  // Regenerate last reply
+  document.querySelectorAll('[data-action="regenerate"]').forEach(btn =>
+    btn.addEventListener('click', async () => {
+      if (isStreaming) return;
+      const conv = getActiveConversation();
+      if (!conv || !conv.messages?.length) return;
+      // Pop last assistant message; previous user message stays
+      popLastMessage();
+      pushMessage({ role: 'assistant', content: '' });
+      isStreaming = true;
+      fx.click();
+      rerender(true);
+      try {
+        const { reply, provider, model } = await sendToAssistant();
+        lastProvider = provider;
+        lastModel = model;
+        await typeReply(reply || 'Pas de réponse.');
+      } catch (err) {
+        updateLastMessage(`⚠️ Erreur : ${err?.message || err}`);
+      }
+      isStreaming = false;
+      rerender(true);
+    })
+  );
+
+  // Toggle TTS auto-read
+  document.querySelectorAll('[data-action="toggle-tts"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      speakReplies = !speakReplies;
+      fx.click();
+      if (window.__KIVU__?.toast) {
+        window.__KIVU__.toast(speakReplies ? '🔊 Lecture audio activée' : '🔇 Lecture audio désactivée', { type: 'info', duration: 1400 });
+      }
+      rerender();
+    })
+  );
+
+  // Voice input (mic)
+  let stopVoiceStt = null;
+  document.querySelectorAll('[data-action="voice-input"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      if (stopVoiceStt) {
+        stopVoiceStt();
+        stopVoiceStt = null;
+        btn.classList.remove('is-recording');
         return;
       }
       if (!speech.sttSupported) {
         if (window.__KIVU__?.toast) window.__KIVU__.toast('Reconnaissance vocale non disponible', { type: 'warning' });
         return;
       }
-      btn.style.color = 'var(--error)';
-      const user = store.get('user') || {};
-      const lang = user.preferredLanguage || 'fra';
-      stopAssistantStt = speech.startListening(lang, {
+      btn.classList.add('is-recording');
+      stopVoiceStt = speech.startListening('fra', {
         onResult: ({ text, isFinal }) => {
           const inputEl = document.getElementById('assistant-input');
-          if (inputEl) inputEl.value = text;
+          if (inputEl) {
+            inputEl.value = text;
+            inputValue = text;
+          }
           if (isFinal && text.trim()) {
-            stopAssistantStt = null;
-            btn.style.color = '';
+            stopVoiceStt = null;
+            btn.classList.remove('is-recording');
             send(text.trim());
           }
         },
-        onError: () => { stopAssistantStt = null; btn.style.color = ''; },
-        onEnd:   () => { stopAssistantStt = null; btn.style.color = ''; }
+        onError: () => { stopVoiceStt = null; btn.classList.remove('is-recording'); },
+        onEnd:   () => { stopVoiceStt = null; btn.classList.remove('is-recording'); }
       });
     })
   );
 
-  // auto-scroll on first paint
-  const stream = document.getElementById('chat-stream');
+  // Backdrop click closes drawer
+  if (drawerOpen) {
+    const backdrop = main;
+    const onClickAway = (e) => {
+      if (!e.target.closest('[data-stop="true"]') && !e.target.closest('[data-action="toggle-drawer"]')) {
+        drawerOpen = false;
+        backdrop.removeEventListener('click', onClickAway, true);
+        rerender();
+      }
+    };
+    setTimeout(() => backdrop.addEventListener('click', onClickAway, true), 0);
+  }
+
+  // Auto-scroll on first paint
+  const stream = document.getElementById('assistant-stream');
   if (stream) stream.scrollTop = stream.scrollHeight;
 };
