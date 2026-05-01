@@ -3,6 +3,7 @@ import { LANGUAGES, findLanguage } from '../data/languages.js';
 import { icons } from '../components/icons.js';
 import { api, ApiError } from '../services/api.js';
 import { speech } from '../services/speech.js';
+import { confirmModal } from '../services/dialog.js';
 
 let isRecording = false;
 let isTranslating = false;
@@ -552,8 +553,15 @@ renderTranslate.mount = () => {
     })
   );
   document.querySelectorAll('[data-action="hist-clear"]').forEach(btn =>
-    btn.addEventListener('click', () => {
-      if (!confirm('Effacer toutes les traductions de l\'historique ? (Les favoris seront conservés)')) return;
+    btn.addEventListener('click', async () => {
+      const ok = await confirmModal({
+        icon: '🗒️',
+        title: 'Effacer l\'historique ?',
+        message: 'Toutes les traductions non favorites seront supprimées. Tes favoris (⭐) seront conservés.',
+        confirmLabel: 'Effacer',
+        cancelLabel: 'Annuler'
+      });
+      if (!ok) return;
       store.update('translation', t => ({
         ...t,
         history: (t.history || []).filter(h => h.favorite)

@@ -12,6 +12,7 @@ import { CATEGORIES, ENTRIES, searchEntries, getEntry, relatedEntries, countByCa
 import { icons } from '../components/icons.js';
 import { speech } from '../services/speech.js';
 import { fx } from '../services/audio-fx.js';
+import { confirmModal } from '../services/dialog.js';
 import { store } from '../store.js';
 
 const LANG_ORDER = ['swa', 'wol', 'bam', 'hau', 'yor', 'zul', 'ibo', 'en'];
@@ -560,8 +561,15 @@ renderDictionary.mount = () => {
 
   // ── Clear recents ─────────────────────────────────────
   document.querySelectorAll('[data-action="dict-clear-recents"]').forEach(btn =>
-    btn.addEventListener('click', () => {
-      if (!confirm('Effacer la liste des mots consultés ?')) return;
+    btn.addEventListener('click', async () => {
+      const ok = await confirmModal({
+        icon: '🕒',
+        title: 'Effacer l\'historique ?',
+        message: 'La liste des mots consultés sera vidée. Tes favoris ne seront pas affectés.',
+        confirmLabel: 'Effacer',
+        cancelLabel: 'Annuler'
+      });
+      if (!ok) return;
       store.update('dictionary', d => ({ ...(d || {}), recent: [] }));
       rerender();
     })

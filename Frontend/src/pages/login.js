@@ -249,8 +249,13 @@ renderLogin.mount = () => {
         const res = await api.post('/auth/signin', { email, password });
         completeAuth(res, 'Connexion réussie');
       } catch (err) {
-        error = err?.message || 'Identifiants incorrects';
-        busy = false; rerender();
+        // If it's a network error (backend offline), fall back to demo mode
+        if (isLoginNetworkError(err)) {
+          completeAuth(buildDemoUser({ email, name: email.split('@')[0] }), 'Mode démo (hors-ligne)');
+        } else {
+          error = err?.message || 'Identifiants incorrects';
+          busy = false; rerender();
+        }
       }
     })
   );
@@ -272,12 +277,48 @@ renderLogin.mount = () => {
         const res = await api.post('/auth/signup', { name, email, password });
         completeAuth(res, `Bienvenue ${name.split(' ')[0]} !`);
       } catch (err) {
-        error = err?.message || 'Création impossible';
-        busy = false; rerender();
+        if (isLoginNetworkError(err)) {
+          completeAuth(buildDemoUser({ email, name }), `Bienvenue ${name.split(' ')[0]} ! (mode démo)`);
+        } else {
+          error = err?.message || 'Création impossible';
+          busy = false; rerender();
+        }
       }
     })
   );
 };
+
+function isLoginNetworkError(err) {
+  if (!err) return false;
+  const msg = String(err.message || err).toLowerCase();
+  return msg.includes('failed to fetch') ||
+         msg.includes('networkerror') ||
+         msg.includes('load failed') ||
+         msg.includes('network request failed') ||
+         err.name === 'TypeError';
+}
+
+function buildDemoUser({ email, name }) {
+  const cleanName = name && name.length > 1 ? name : (email?.split('@')[0] || 'Apprenant');
+  return {
+    user: {
+      id: 'demo-' + Date.now(),
+      name: cleanName,
+      email: email || 'demo@kivu.africa',
+      avatar: '🧑🏾',
+      country: 'Côte d\'Ivoire',
+      countryFlag: '🇨🇮',
+      provider: 'demo',
+      guest: false,
+      preferredLanguage: 'fra',
+      motherTongue: 'dyu',
+      learningLanguages: ['swa', 'wol'],
+      subscription: 'free',
+      stats: { xp: 0, level: 1, nextLevelXP: 500, streak: 0, wordsLearned: 0, badgesCount: 0, translationsCount: 0, contributionsCount: 0, rank: 9999 }
+    },
+    token: 'demo-token-' + Date.now()
+  };
+}
 
 function mockOauth(provider, mockEmail, mockName, mockAvatar) {
   busy = true; error = null; rerender();

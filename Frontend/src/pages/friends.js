@@ -13,6 +13,7 @@
 import { store } from '../store.js';
 import { icons } from '../components/icons.js';
 import { fx } from '../services/audio-fx.js';
+import { confirmModal } from '../services/dialog.js';
 import {
   ensureUserCode,
   getFriends,
@@ -556,14 +557,21 @@ renderFriends.mount = () => {
     })
   );
   document.querySelectorAll('[data-action="remove-friend"]').forEach(btn =>
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const id = btn.dataset.id;
       const f = getFriend(id);
       if (!f) return;
-      if (!confirm(`Retirer ${f.name} de tes amis ?`)) return;
+      const ok = await confirmModal({
+        icon: f.avatar,
+        title: `Retirer ${f.name} ?`,
+        message: 'Vous ne verrez plus son activité ni ses encouragements.',
+        confirmLabel: 'Retirer',
+        cancelLabel: 'Garder',
+        danger: true
+      });
+      if (!ok) return;
       removeFriend(id);
       detailFriendId = null;
-      fx.click();
       if (window.__KIVU__?.toast) {
         window.__KIVU__.toast(`${f.name} retiré de tes amis`, { type: 'info', duration: 2000 });
       }

@@ -17,6 +17,7 @@ import { speech } from '../services/speech.js';
 import { fx } from '../services/audio-fx.js';
 import { renderMarkdown, stripMarkdown } from '../services/markdown.js';
 import { offlineReply, isNetworkError } from '../services/offline-ai.js';
+import { confirmModal } from '../services/dialog.js';
 import {
   listConversations,
   getActiveConversation,
@@ -491,10 +492,17 @@ renderAssistant.mount = () => {
 
   // Delete conversation
   document.querySelectorAll('[data-action="del-conv"]').forEach(btn =>
-    btn.addEventListener('click', () => {
-      if (!confirm('Supprimer cette conversation ?')) return;
+    btn.addEventListener('click', async () => {
+      const ok = await confirmModal({
+        icon: '🗑️',
+        title: 'Supprimer cette conversation ?',
+        message: 'Cette action est irréversible.',
+        confirmLabel: 'Supprimer',
+        cancelLabel: 'Garder',
+        danger: true
+      });
+      if (!ok) return;
       deleteConversation(btn.dataset.id);
-      fx.click();
       rerender();
     })
   );

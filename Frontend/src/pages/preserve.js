@@ -1,6 +1,7 @@
 import { LANGUAGES } from '../data/languages.js';
 import { icons } from '../components/icons.js';
 import { recorder } from '../services/recorder.js';
+import { confirmModal } from '../services/dialog.js';
 import { store } from '../store.js';
 
 const CATEGORIES = [
@@ -293,9 +294,17 @@ renderPreserve.mount = () => {
   );
 
   document.querySelectorAll('[data-action="delete-record"]').forEach(btn =>
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const id = btn.dataset.recId;
-      if (!confirm('Supprimer cet enregistrement ?')) return;
+      const ok = await confirmModal({
+        icon: '🗑️',
+        title: 'Supprimer cet enregistrement ?',
+        message: 'Cet enregistrement audio sera définitivement supprimé du stockage local.',
+        confirmLabel: 'Supprimer',
+        cancelLabel: 'Garder',
+        danger: true
+      });
+      if (!ok) return;
       recorder.delete(id);
       rerender();
     })

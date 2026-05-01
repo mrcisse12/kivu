@@ -11,6 +11,7 @@ import { speech } from '../services/speech.js';
 import { fx } from '../services/audio-fx.js';
 import { notifications } from '../services/notifications.js';
 import { recordSelfActivity } from '../services/friends.js';
+import { confirmModal } from '../services/dialog.js';
 import { mascot } from '../components/mascot.js';
 import { icons } from '../components/icons.js';
 
@@ -399,9 +400,17 @@ renderLessonPlayer.mount = () => {
   }
 
   document.querySelectorAll('[data-action="lesson-quit"]').forEach(btn =>
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       if (!isFinished && exerciseIndex > 0) {
-        if (!confirm('Quitter la leçon ? Votre progression sera perdue.')) return;
+        const ok = await confirmModal({
+          icon: '⚠️',
+          title: 'Quitter la leçon ?',
+          message: 'Tu vas perdre ta progression sur cette leçon. Tu pourras la recommencer plus tard.',
+          confirmLabel: 'Quitter',
+          cancelLabel: 'Continuer',
+          danger: true
+        });
+        if (!ok) return;
       }
       navigate('/learn');
     })

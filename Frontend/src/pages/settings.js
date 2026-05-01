@@ -18,6 +18,7 @@ import { recorder } from '../services/recorder.js';
 import { t, setLang, getLang, LANGS_AVAILABLE } from '../i18n/index.js';
 import { PALETTES, DENSITIES, applyPalette, applyDensity, applyContrast } from '../theme.js';
 import { sync } from '../services/sync.js';
+import { confirmModal } from '../services/dialog.js';
 
 function sections() {
   return [
@@ -741,8 +742,16 @@ renderSettings.mount = () => {
   );
 
   document.querySelectorAll('[data-action="reset-account"]').forEach(btn =>
-    btn.addEventListener('click', () => {
-      if (!confirm('Réinitialiser votre compte ? Cette action est irréversible.')) return;
+    btn.addEventListener('click', async () => {
+      const ok = await confirmModal({
+        icon: '⚠️',
+        title: 'Réinitialiser le compte ?',
+        message: 'Tous tes progrès, badges, séries et conversations seront perdus. Cette action est irréversible.',
+        confirmLabel: 'Tout réinitialiser',
+        cancelLabel: 'Annuler',
+        danger: true
+      });
+      if (!ok) return;
       store.reset();
       if (window.__KIVU__?.toast) window.__KIVU__.toast('Compte réinitialisé', { type: 'info' });
     })
@@ -751,7 +760,14 @@ renderSettings.mount = () => {
   // Logout — pousse une dernière sync avant de partir
   document.querySelectorAll('[data-action="logout"]').forEach(btn =>
     btn.addEventListener('click', async () => {
-      if (!confirm('Se déconnecter ?')) return;
+      const ok = await confirmModal({
+        icon: '👋',
+        title: 'Se déconnecter ?',
+        message: 'À bientôt sur KIVU ! Tes données seront synchronisées avant la déconnexion.',
+        confirmLabel: 'Déconnexion',
+        cancelLabel: 'Rester'
+      });
+      if (!ok) return;
       try { await sync.pushNow(); } catch { /* offline ok */ }
       localStorage.removeItem('kivu.token');
       store.set('authToken', null);
@@ -769,7 +785,14 @@ renderSettings.mount = () => {
   // Storage
   document.querySelectorAll('[data-action="clear-pwa-cache"]').forEach(btn =>
     btn.addEventListener('click', async () => {
-      if (!confirm('Vider tout le cache hors-ligne ?')) return;
+      const ok = await confirmModal({
+        icon: '🧹',
+        title: 'Vider le cache hors-ligne ?',
+        message: 'Les pages, dictionnaire, et leçons en cache seront re-téléchargés à la prochaine ouverture.',
+        confirmLabel: 'Vider le cache',
+        cancelLabel: 'Annuler'
+      });
+      if (!ok) return;
       if ('caches' in window) {
         const names = await caches.keys();
         await Promise.all(names.map(n => caches.delete(n)));
@@ -806,8 +829,16 @@ renderSettings.mount = () => {
   );
 
   document.querySelectorAll('[data-action="delete-data"]').forEach(btn =>
-    btn.addEventListener('click', () => {
-      if (!confirm('Supprimer toutes vos données ? Action irréversible.')) return;
+    btn.addEventListener('click', async () => {
+      const ok = await confirmModal({
+        icon: '💣',
+        title: 'Supprimer toutes les données ?',
+        message: 'Tout sera effacé : profil, leçons, traductions, amis, conversations IA. L\'application redémarrera vide.',
+        confirmLabel: 'Tout supprimer',
+        cancelLabel: 'Annuler',
+        danger: true
+      });
+      if (!ok) return;
       localStorage.clear();
       if (window.__KIVU__?.toast) window.__KIVU__.toast('Données supprimées', { type: 'info' });
       setTimeout(() => location.reload(), 500);

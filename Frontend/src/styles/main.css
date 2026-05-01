@@ -5278,6 +5278,109 @@ html[data-theme="dark"] .checkout-method.active { background: rgba(51, 149, 218,
 }
 
 /* ===========================================================
+   KIVU dialogs (confirm + prompt) — replace native confirm/prompt
+   =========================================================== */
+.kivu-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(20, 32, 58, 0);
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+  transition: background 0.18s ease, backdrop-filter 0.18s ease;
+}
+.kivu-dialog-backdrop.is-open {
+  background: rgba(20, 32, 58, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.kivu-dialog-backdrop.is-leaving {
+  background: rgba(20, 32, 58, 0);
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+  pointer-events: none;
+}
+.kivu-dialog {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg);
+  color: var(--text-primary);
+  border-radius: 18px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.30);
+  text-align: center;
+  transform: scale(0.94);
+  opacity: 0;
+  transition: transform 0.22s cubic-bezier(.2,.8,.3,1.05), opacity 0.18s ease;
+}
+.kivu-dialog-backdrop.is-open .kivu-dialog {
+  transform: scale(1);
+  opacity: 1;
+}
+.kivu-dialog__icon {
+  font-size: 44px;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+.kivu-dialog__title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0 0 6px;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+.kivu-dialog__msg {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0 0 18px;
+  line-height: 1.45;
+}
+.kivu-dialog__field {
+  margin-bottom: 16px;
+  text-align: left;
+}
+.kivu-dialog__input {
+  width: 100%;
+  font-size: 1.05rem;
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+.kivu-dialog__error {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--error);
+  font-weight: 600;
+}
+.kivu-dialog__actions {
+  display: flex;
+  gap: 10px;
+}
+/* Danger button variant */
+.btn.btn-danger {
+  background: var(--error);
+  color: white;
+  border-color: #c43838;
+  border-bottom-color: #a82c2c;
+}
+.btn.btn-danger:hover {
+  background: #d44545;
+}
+.btn.btn-danger:active {
+  background: #a82c2c;
+  border-bottom-width: 2px;
+}
+
+@media (max-width: 480px) {
+  .kivu-dialog { padding: 20px 18px 16px; max-width: calc(100vw - 24px); }
+  .kivu-dialog__title { font-size: 1.05rem; }
+}
+
+/* ===========================================================
    Daily goal ring (home)
    =========================================================== */
 .daily-goal {

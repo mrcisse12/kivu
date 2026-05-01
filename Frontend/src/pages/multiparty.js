@@ -12,6 +12,7 @@ import { icons } from '../components/icons.js';
 import { store }  from '../store.js';
 import { speech } from '../services/speech.js';
 import { api }    from '../services/api.js';
+import { promptModal } from '../services/dialog.js';
 
 /* ─────────────────────────── Constants ─────────────────────── */
 
@@ -389,8 +390,20 @@ renderMultiParty.mount = function () {
   );
 
   document.querySelectorAll('[data-action="mp-join"]').forEach(btn =>
-    btn.addEventListener('click', () => {
-      const code = prompt('Entrez le code de la réunion :')?.trim().toUpperCase();
+    btn.addEventListener('click', async () => {
+      const code = await promptModal({
+        icon: '🤝',
+        title: 'Rejoindre une réunion',
+        message: 'Saisis le code partagé par l\'organisateur (6 caractères).',
+        placeholder: 'XYZ-789',
+        confirmLabel: 'Rejoindre',
+        transform: 'uppercase',
+        validate: v => {
+          if (!v) return 'Le code ne peut pas être vide';
+          if (v.length < 4) return 'Le code doit faire au moins 4 caractères';
+          return null;
+        }
+      });
       if (!code) return;
       roomCode = code;
       meetingTitle = `Réunion ${code}`;
