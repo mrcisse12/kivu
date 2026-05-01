@@ -280,6 +280,8 @@ function renderCompletion() {
   const correct = total - mistakes;
   const perfect = mistakes === 0;
   const xp = currentLesson.xpReward;
+  const userStats = store.get('user').stats || {};
+  const totalXP = userStats.xp || 0;
   return `
     <div class="lesson-player">
       <header class="lesson-top">
@@ -297,20 +299,24 @@ function renderCompletion() {
         <div class="lesson-rewards">
           <div class="reward-card">
             <div class="reward-icon" style="background:rgba(242,149,45,0.15); color:var(--kivu-accent);">⭐</div>
-            <div class="font-bold text-lg">+${xp}</div>
+            <div class="font-bold text-lg" data-count-target="${xp}" data-count-prefix="+">+0</div>
             <div class="text-xs text-muted">XP gagnés</div>
           </div>
           <div class="reward-card">
             <div class="reward-icon" style="background:rgba(235,77,77,0.15); color:var(--error);">🔥</div>
-            <div class="font-bold text-lg">${(store.get('user').stats.streak)}</div>
+            <div class="font-bold text-lg" data-count-target="${userStats.streak || 0}">${userStats.streak || 0}</div>
             <div class="text-xs text-muted">Jours de série</div>
           </div>
           ${perfect ? `
             <div class="reward-card">
               <div class="reward-icon" style="background:rgba(140,64,173,0.15); color:var(--kivu-tertiary);">💎</div>
-              <div class="font-bold text-lg">+5</div>
+              <div class="font-bold text-lg" data-count-target="5" data-count-prefix="+">+0</div>
               <div class="text-xs text-muted">Bonus parfait</div>
             </div>` : ''}
+        </div>
+
+        <div class="lesson-completion__total">
+          Total : <strong data-count-target="${totalXP}" data-count-final="true">${totalXP.toLocaleString('fr-FR')}</strong> XP
         </div>
       </main>
       <footer class="lesson-foot">
@@ -321,6 +327,26 @@ function renderCompletion() {
       </footer>
     </div>
   `;
+}
+
+/** Animate any [data-count-target] element from 0 (or current) to target. */
+function animateCounters(root) {
+  if (!root) return;
+  root.querySelectorAll('[data-count-target]').forEach(el => {
+    const target = Number(el.dataset.countTarget) || 0;
+    const prefix = el.dataset.countPrefix || '';
+    const start = el.dataset.countFinal === 'true' ? Math.max(0, target - 50) : 0;
+    const duration = 900;
+    const startTs = performance.now();
+    const tick = (now) => {
+      const t = Math.min(1, (now - startTs) / duration);
+      const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+      const value = Math.round(start + (target - start) * eased);
+      el.textContent = prefix + value.toLocaleString('fr-FR');
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
 }
 
 // ----- Helpers ----------------------------------------------------------
@@ -352,6 +378,11 @@ renderLessonPlayer.mount = () => {
     main.innerHTML = renderLessonPlayer();
     renderLessonPlayer.mount();
   };
+
+  // Animate XP counters on completion screen
+  if (isFinished) {
+    setTimeout(() => animateCounters(main), 200);
+  }
 
   // Auto-play TTS for listen exercise
   if (currentLesson && !isFinished) {

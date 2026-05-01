@@ -147,6 +147,17 @@ function refreshBell() {
   }
 }
 
+function syncBellVisibility() {
+  if (!bellEl) return;
+  // Hide during onboarding/login — check current URL hash
+  const hash = (location.hash || '').replace('#', '');
+  const fullScreenRoutes = ['/onboarding', '/login'];
+  const inLessonOrStory = hash.startsWith('/lesson/') || hash.startsWith('/story/');
+  const hidden = fullScreenRoutes.includes(hash) || inLessonOrStory;
+  bellEl.style.display = hidden ? 'none' : 'inline-flex';
+  if (panelOpen && hidden) closePanel();
+}
+
 export function setupNotificationsBell() {
   bellEl = document.createElement('button');
   bellEl.className = 'notif-bell';
@@ -161,10 +172,14 @@ export function setupNotificationsBell() {
   });
   document.body.appendChild(bellEl);
   refreshBell();
+  syncBellVisibility();
 
   // Refresh bell when notifications list changes (any store change re-checks)
   store.subscribe(() => {
     refreshBell();
+    syncBellVisibility();
     if (panelOpen) refreshPanel();
   });
+  // Hash change → route change
+  window.addEventListener('hashchange', syncBellVisibility);
 }

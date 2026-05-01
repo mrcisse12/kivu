@@ -288,5 +288,41 @@ function checkStreakProtection() {
 // Check once per session (don't spam)
 setTimeout(checkStreakProtection, 3000);
 
+// ===========================================================
+// Daily login bonus — 10 XP on first visit each day
+// ===========================================================
+function checkDailyLoginBonus() {
+  const today = new Date().toISOString().slice(0, 10);
+  const lastBonus = localStorage.getItem('kivu.dailyBonusDate');
+  if (lastBonus === today) return;
+  try { localStorage.setItem('kivu.dailyBonusDate', today); } catch {}
+  const BONUS_XP = 10;
+  store.update('user', u => {
+    let newXP = (u.stats?.xp || 0) + BONUS_XP;
+    let newLevel = u.stats?.level || 1;
+    let newNextLevelXP = u.stats?.nextLevelXP || 500;
+    while (newXP >= newNextLevelXP) {
+      newLevel++;
+      newNextLevelXP = Math.ceil(newNextLevelXP * 1.45 / 100) * 100;
+    }
+    return {
+      ...u,
+      stats: { ...(u.stats || {}), xp: newXP, level: newLevel, nextLevelXP: newNextLevelXP }
+    };
+  });
+  setTimeout(() => {
+    toast(`🎁 Bonus quotidien : +${BONUS_XP} XP ! Bienvenue de retour.`, { type: 'success', duration: 3500 });
+    notifications.push({
+      type: 'reminder',
+      icon: '🎁',
+      title: `Bonus quotidien : +${BONUS_XP} XP`,
+      body: 'Merci de revenir aujourd\'hui ! Continuez votre série.',
+      actionPath: '/learn'
+    });
+  }, 4500); // after streak check, before they navigate
+}
+// Wait for store to be ready, then check once
+setTimeout(checkDailyLoginBonus, 4000);
+
 // Export for console debug
 window.__KIVU__ = { navigate, store, toast };
