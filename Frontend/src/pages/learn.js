@@ -3,6 +3,7 @@ import { store } from '../store.js';
 import { icons } from '../components/icons.js';
 import { buildQuiz, LANG_LABELS } from '../data/flashcards.js';
 import { speech } from '../services/speech.js';
+import { fx } from '../services/audio-fx.js';
 import { mascot, mascotBubble } from '../components/mascot.js';
 import { UNITS, buildCurriculum } from '../data/lessons.js';
 import { openLesson } from './lesson-player.js';
@@ -636,8 +637,11 @@ renderLearn.mount = () => {
       const q = quizQuestions[quizIndex];
       if (opt === q.target) {
         quizScore++;
+        fx.correct();
         if (window.__KIVU__?.toast)
           window.__KIVU__.toast(`Bravo ! 🔥 +${LANG_LABELS[quizLang].xpPerCorrect} XP`, { type: 'success', duration: 1300 });
+      } else {
+        fx.wrong();
       }
       // Auto-pronounce the correct answer for learning
       if (speech.ttsSupported) {
@@ -658,7 +662,11 @@ renderLearn.mount = () => {
     btn.addEventListener('click', () => {
       if (quizIndex >= quizQuestions.length - 1) {
         quizFinished = true;
-        // Confetti on quiz finish
+        // Celebration sounds + confetti on quiz finish
+        if (quizScore >= Math.ceil(quizQuestions.length / 2)) {
+          fx.success();
+          setTimeout(() => fx.coin(), 350);
+        }
         launchQuizConfetti(quizScore, quizQuestions.length);
         // Persist XP + streak + level-up
         const xpGain = quizScore * LANG_LABELS[quizLang].xpPerCorrect;
@@ -679,8 +687,11 @@ renderLearn.mount = () => {
             newNextLevelXP = Math.ceil(newNextLevelXP * 1.45 / 100) * 100;
             leveledUp = true;
           }
-          if (leveledUp && window.__KIVU__?.toast) {
-            setTimeout(() => window.__KIVU__.toast(`🎉 Niveau ${newLevel} atteint !`, { type: 'success', duration: 3000 }), 400);
+          if (leveledUp) {
+            setTimeout(() => fx.levelUp(), 700);
+            if (window.__KIVU__?.toast) {
+              setTimeout(() => window.__KIVU__.toast(`🎉 Niveau ${newLevel} atteint !`, { type: 'success', duration: 3000 }), 400);
+            }
           }
           return {
             ...u,

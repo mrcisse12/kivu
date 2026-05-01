@@ -25,6 +25,8 @@ import { renderStories } from './pages/stories.js';
 import { renderStoryPlayer } from './pages/story-player.js';
 import { setupInstallBanner } from './components/install-banner.js';
 import { setupMascotTracker } from './components/mascot-tracker.js';
+import { setupNotificationsBell } from './components/notifications-panel.js';
+import { seedWelcomeNotifications, notifications } from './services/notifications.js';
 import { initI18n, onLangChange } from './i18n/index.js';
 import { applyPalette, applyDensity, applyContrast } from './theme.js';
 import { sync } from './services/sync.js';
@@ -160,6 +162,10 @@ setupInstallBanner();
 // Mascot eye-tracking (Kivi suit le curseur + cligne aléatoirement)
 setupMascotTracker();
 
+// Notifications system — bell + welcome notes
+seedWelcomeNotifications();
+setupNotificationsBell();
+
 // ===========================================================
 // Cloud sync status indicator (top-right)
 // ===========================================================
@@ -271,6 +277,12 @@ function checkStreakProtection() {
   const streak = user.stats?.streak || 0;
   if (streak > 0 && lastPlayed !== today) {
     toast(`🔥 Ta série de ${streak} jours est en danger ! Fais une leçon avant minuit.`, { type: 'warning', duration: 6000 });
+    // Push as persistent notification (only once per day to avoid spam)
+    const sentKey = 'kivu.streakNotifSent.' + today;
+    if (!localStorage.getItem(sentKey)) {
+      try { localStorage.setItem(sentKey, '1'); } catch {}
+      notifications.reminder(`Ta série de ${streak} jours est en danger ! Fais une leçon avant minuit.`);
+    }
   }
 }
 // Check once per session (don't spam)

@@ -12,6 +12,8 @@ import { navigate } from '../router.js';
 import { icons } from '../components/icons.js';
 import { mascot } from '../components/mascot.js';
 import { speech } from '../services/speech.js';
+import { fx } from '../services/audio-fx.js';
+import { notifications } from '../services/notifications.js';
 import { getStory } from '../data/stories.js';
 import { t } from '../i18n/index.js';
 
@@ -331,7 +333,12 @@ renderStoryPlayer.mount = () => {
       answer = btn.dataset.value;
       const story = getStory(storyId);
       const q = story.chapters[chapterIdx].question;
-      if (answer !== q.correct) mistakes++;
+      if (answer !== q.correct) {
+        mistakes++;
+        fx.wrong();
+      } else {
+        fx.correct();
+      }
       rerender();
     })
   );
@@ -406,9 +413,24 @@ function finishStory(story) {
     }
   });
 
-  if (leveledUp && window.__KIVU__?.toast) {
-    setTimeout(() => window.__KIVU__.toast(`🎉 Niveau ${newLevel} atteint !`, { type: 'success', duration: 3500 }), 600);
+  // Celebration sounds + notifications
+  fx.success();
+  setTimeout(() => fx.coin(), 350);
+  if (leveledUp) {
+    setTimeout(() => fx.levelUp(), 700);
+    notifications.levelUp(newLevel);
+    if (window.__KIVU__?.toast) {
+      setTimeout(() => window.__KIVU__.toast(`🎉 Niveau ${newLevel} atteint !`, { type: 'success', duration: 3500 }), 600);
+    }
   }
+  // Story-specific notification
+  notifications.push({
+    type: 'achievement',
+    icon: '📖',
+    title: 'Histoire terminée !',
+    body: `${story.title || story.id} — +${xpGain} XP`,
+    actionPath: '/stories'
+  });
 
   // Celebration confetti
   launchConfetti(mistakes === 0 ? 70 : 35);

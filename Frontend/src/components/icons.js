@@ -53,6 +53,20 @@ export const icons = {
   trophy: I(`<path d="M8 21h8M12 17v4"/><path d="M7 4h10v6a5 5 0 01-10 0V4z"/><path d="M5 4H3a2 2 0 002 4M19 4h2a2 2 0 01-2 4"/>`),
   flame: I(`<path d="M12 22a7 7 0 007-7c0-3-2-5-3-6 0 4-3 5-5 5s-2-2-1-5C6 11 5 13 5 15a7 7 0 007 7z"/>`),
   star: I(`<path d="M12 2l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/>`),
+  starFilled: (size = 24, color = 'currentColor') => `
+    <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${color}"
+         stroke="${color}" stroke-width="1.5" stroke-linecap="round"
+         stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 2l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/>
+    </svg>`,
+  trash: I(`<path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/>`),
+  calendar: I(`<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>`),
+  bookmark: I(`<path d="M19 21l-7-5-7 5V4a2 2 0 012-2h10a2 2 0 012 2z"/>`),
+  award: I(`<circle cx="12" cy="9" r="6"/><path d="M8.5 14L7 22l5-3 5 3-1.5-8"/>`),
+  pencil: I(`<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/>`),
+  refresh: I(`<path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/>`),
+  download: I(`<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M3 21h18"/>`),
+  cloud: I(`<path d="M18 17a4 4 0 00-1-7.87 6 6 0 00-11.5 1.74A4 4 0 006 17z"/>`),
   zap: I(`<path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/>`),
   book: I(`<path d="M4 4a2 2 0 012-2h12v18H6a2 2 0 01-2-2V4z"/><path d="M4 18a2 2 0 012-2h12"/>`),
   users: I(`<circle cx="9" cy="8" r="3.5"/><path d="M3 21a6 6 0 0112 0"/><circle cx="17" cy="8" r="3"/><path d="M21 21a5 5 0 00-5-5"/>`),

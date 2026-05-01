@@ -38,7 +38,8 @@ const defaultState = {
     darkMode: false,
     fontSize: 1.0,
     highContrast: false,
-    offlineOnly: false
+    offlineOnly: false,
+    soundEnabled: true
   },
   // Authentification
   authToken: null,
@@ -62,7 +63,15 @@ let state = load();
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? { ...defaultState, ...JSON.parse(raw) } : defaultState;
+    if (!raw) return defaultState;
+    const persisted = JSON.parse(raw);
+    // Merge: default → persisted, with deep merge on preferences so new fields appear
+    return {
+      ...defaultState,
+      ...persisted,
+      preferences: { ...defaultState.preferences, ...(persisted.preferences || {}) },
+      user: { ...defaultState.user, ...(persisted.user || {}), stats: { ...defaultState.user.stats, ...(persisted.user?.stats || {}) } }
+    };
   } catch {
     return defaultState;
   }

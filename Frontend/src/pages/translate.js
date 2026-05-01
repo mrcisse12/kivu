@@ -183,10 +183,7 @@ export function renderTranslate() {
     ` : ''}
 
     <!-- Recent translations -->
-    <h2 class="font-display font-bold text-lg mb-sm">Traductions récentes</h2>
-    <div class="flex flex-col gap-xs mb-lg">
-      ${HISTORY.map(h => renderHistoryItem(h)).join('')}
-    </div>
+    ${renderHistorySection()}
 
     <!-- Language picker modal (rendered when open) -->
     ${pickerOpen ? renderLangPicker(pickerOpen) : ''}
@@ -386,18 +383,91 @@ function escapeAttr(s) {
 }
 
 function renderHistoryItem(h) {
+  const time = h.time || formatRelativeTime(h.date);
   return `
-    <div class="card history-item">
+    <div class="card history-item" data-id="${h.id || ''}">
       <div class="flex items-center gap-xs mb-xs">
         <span class="lang-flag-sm">${h.fromFlag}</span>
         <span class="text-tertiary">${icons.arrowRight(14)}</span>
         <span class="lang-flag-sm">${h.toFlag}</span>
-        <span style="margin-left:auto" class="text-xs text-muted">${h.time}</span>
+        <span style="margin-left:auto" class="text-xs text-muted">${time}</span>
+        ${h.id ? `
+          <button class="icon-btn icon-btn--xs" data-action="hist-fav" data-id="${h.id}"
+                  aria-label="Favori"
+                  style="color:${h.favorite ? 'var(--kivu-accent)' : 'var(--text-tertiary)'};">
+            ${h.favorite ? icons.starFilled(16) : icons.star(16)}
+          </button>
+          <button class="icon-btn icon-btn--xs" data-action="hist-replay" data-id="${h.id}"
+                  aria-label="Réécouter">${icons.speaker(16)}</button>
+          <button class="icon-btn icon-btn--xs" data-action="hist-copy" data-id="${h.id}"
+                  aria-label="Copier">${icons.copy ? icons.copy(16) : '📋'}</button>
+          <button class="icon-btn icon-btn--xs" data-action="hist-del" data-id="${h.id}"
+                  aria-label="Supprimer" style="color:var(--text-tertiary);">${icons.trash ? icons.trash(16) : '🗑'}</button>
+        ` : ''}
       </div>
       <div class="text-sm text-muted">${escapeHtml(h.source)}</div>
       <div class="font-semibold">${escapeHtml(h.target)}</div>
     </div>
   `;
+}
+
+let historyTab = 'recent'; // 'recent' | 'favorites'
+
+function renderHistorySection() {
+  const tr = store.get('translation') || {};
+  const fullHistory = tr.history || [];
+  const favorites = fullHistory.filter(h => h.favorite);
+  const list = historyTab === 'favorites' ? favorites : fullHistory.slice(0, 12);
+
+  // Fallback seed if empty
+  const fallback = (!fullHistory.length && historyTab === 'recent') ? SAMPLE_HISTORY : [];
+  const items = list.length ? list : fallback;
+
+  return `
+    <div class="flex items-center mb-sm" style="gap:var(--space-xs);">
+      <h2 class="font-display font-bold text-lg" style="margin-right:auto;">Traductions</h2>
+      <div class="seg-tabs">
+        <button class="seg-tab ${historyTab === 'recent' ? 'active' : ''}"
+                data-action="hist-tab" data-tab="recent">Récentes</button>
+        <button class="seg-tab ${historyTab === 'favorites' ? 'active' : ''}"
+                data-action="hist-tab" data-tab="favorites">⭐ ${favorites.length}</button>
+      </div>
+    </div>
+    <div class="flex flex-col gap-xs mb-lg">
+      ${items.length === 0 ? `
+        <div class="empty-state">
+          <div class="empty-state__emoji">🗒️</div>
+          <div class="font-semibold">${historyTab === 'favorites' ? 'Aucun favori pour le moment' : 'Aucune traduction encore'}</div>
+          <div class="text-xs text-muted">${historyTab === 'favorites' ? 'Touchez l\'étoile sur une traduction pour la garder ici.' : 'Faites une traduction pour la voir apparaître.'}</div>
+        </div>
+      ` : items.map(h => renderHistoryItem(h)).join('')}
+      ${fullHistory.length > 0 && historyTab === 'recent' ? `
+        <button class="btn btn-ghost btn-sm" data-action="hist-clear"
+                style="align-self:center;margin-top:var(--space-sm);">
+          Effacer l'historique
+        </button>
+      ` : ''}
+    </div>
+  `;
+}
+
+const SAMPLE_HISTORY = [
+  { fromFlag: '🇫🇷', toFlag: '🇲🇱', source: 'Ça va mon ami ?',         target: 'I ka kɛnɛ, n teri?',  time: 'exemple' },
+  { fromFlag: '🇫🇷', toFlag: '🇨🇮', source: 'Combien coûte ce fruit ?', target: 'Joli foli yen ka jigi fili ?', time: 'exemple' },
+  { fromFlag: '🇫🇷', toFlag: '🇹🇿', source: 'Bon voyage',               target: 'Safari njema',          time: 'exemple' }
+];
+
+function formatRelativeTime(iso) {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  const min = Math.round(ms / 60000);
+  if (min < 1) return 'à l\'instant';
+  if (min < 60) return `il y a ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `il y a ${h} h`;
+  const d = Math.round(h / 24);
+  if (d < 7) return `il y a ${d} j`;
+  return new Date(iso).toLocaleDateString('fr-FR');
 }
 
 function escapeHtml(s) {
@@ -436,6 +506,61 @@ renderTranslate.mount = () => {
       })
     );
   });
+
+  /* ── History actions ──────────────────────────────────── */
+  document.querySelectorAll('[data-action="hist-tab"]').forEach(btn =>
+    btn.addEventListener('click', () => { historyTab = btn.dataset.tab; rerender(); })
+  );
+  document.querySelectorAll('[data-action="hist-fav"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      store.update('translation', t => ({
+        ...t,
+        history: (t.history || []).map(h => h.id === id ? { ...h, favorite: !h.favorite } : h)
+      }));
+      rerender();
+    })
+  );
+  document.querySelectorAll('[data-action="hist-replay"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const h = (store.get('translation')?.history || []).find(x => x.id === id);
+      if (h && speech.ttsSupported) speech.speak(h.target, h.targetLang || 'swa');
+    })
+  );
+  document.querySelectorAll('[data-action="hist-copy"]').forEach(btn =>
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const h = (store.get('translation')?.history || []).find(x => x.id === id);
+      if (!h) return;
+      try {
+        await navigator.clipboard.writeText(`${h.source}\n→ ${h.target}`);
+        if (window.__KIVU__?.toast) window.__KIVU__.toast('Copié dans le presse-papier', { type: 'success', duration: 1400 });
+      } catch {
+        if (window.__KIVU__?.toast) window.__KIVU__.toast('Impossible de copier', { type: 'error' });
+      }
+    })
+  );
+  document.querySelectorAll('[data-action="hist-del"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      store.update('translation', t => ({
+        ...t,
+        history: (t.history || []).filter(x => x.id !== id)
+      }));
+      rerender();
+    })
+  );
+  document.querySelectorAll('[data-action="hist-clear"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      if (!confirm('Effacer toutes les traductions de l\'historique ? (Les favoris seront conservés)')) return;
+      store.update('translation', t => ({
+        ...t,
+        history: (t.history || []).filter(h => h.favorite)
+      }));
+      rerender();
+    })
+  );
 
   // Language swap
   document.querySelectorAll('[data-action="lang-swap"]').forEach(el =>
@@ -639,6 +764,26 @@ renderTranslate.mount = () => {
         ...u,
         stats: { ...u.stats, translationsCount: (u.stats.translationsCount || 0) + 1 }
       }));
+      // Save to translation history (deduplicate same source+target)
+      const fromLang = findLanguage(sourceLanguage);
+      const toLang = findLanguage(targetLanguage);
+      store.update('translation', t => {
+        const entry = {
+          id: 'tr_' + Date.now(),
+          source: sourceText.trim(),
+          target: result.translatedText,
+          sourceLang: sourceLanguage,
+          targetLang: targetLanguage,
+          fromFlag: fromLang?.flag || '🌐',
+          toFlag: toLang?.flag || '🌐',
+          date: new Date().toISOString(),
+          favorite: false
+        };
+        const prev = (t.history || []).filter(h =>
+          !(h.source === entry.source && h.targetLang === entry.targetLang)
+        );
+        return { ...t, history: [entry, ...prev].slice(0, 100) }; // keep last 100
+      });
       rerender();
       // Auto-speak the translation
       if (speech.ttsSupported) {

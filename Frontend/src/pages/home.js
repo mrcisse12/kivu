@@ -4,6 +4,7 @@ import { ENTRIES } from '../data/dictionary.js';
 import { icons } from '../components/icons.js';
 import { mascot } from '../components/mascot.js';
 import { speech } from '../services/speech.js';
+import { upcomingEvents, todayEvents, daysUntil } from '../data/events.js';
 import { t } from '../i18n/index.js';
 
 // Tuiles fonctionnalités — emojis catégorie autorisés (gamification visuelle)
@@ -157,6 +158,9 @@ export function renderHome() {
     <!-- Mot du jour -->
     ${renderWordOfDay()}
 
+    <!-- Événements culturels africains -->
+    ${renderEventsTeaser()}
+
     <!-- Radio Kivi + Stories -->
     <div class="grid grid-2 mb-md">
       <button class="card radio-promo" data-nav="/radio" style="background:#1CB0F6; color:white; border-color:#1899D6; border-bottom-color:#1899D6;">
@@ -291,6 +295,59 @@ function renderWordOfDay() {
           ${icons.speaker(20)}
         </button>
       </div>
+    </div>
+  `;
+}
+
+function renderEventsTeaser() {
+  const today = todayEvents();
+  const upcoming = upcomingEvents(45);
+
+  // If there's an event today — show celebration banner
+  if (today.length > 0) {
+    const ev = today[0];
+    return `
+      <div class="card events-card events-card--today mb-lg" style="background:linear-gradient(135deg, #FF9600 0%, #F2952D 100%); color:white; border-color:rgba(255,255,255,0.3); border-bottom-color:#D67A00;">
+        <div class="flex items-center gap-md">
+          <div class="events-emoji-big" aria-hidden="true">${ev.emoji}</div>
+          <div style="flex:1;">
+            <div class="text-xs font-semibold" style="opacity:0.85; letter-spacing:0.6px; text-transform:uppercase;">Aujourd'hui en Afrique</div>
+            <div class="font-display font-bold text-lg" style="color:white; margin:2px 0 4px;">${ev.name}</div>
+            <div class="text-xs" style="opacity:0.92;">${ev.region} · ${ev.desc}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (!upcoming.length) return '';
+
+  // Show next 3 upcoming events
+  const next3 = upcoming.slice(0, 3);
+  return `
+    <div class="section-head mb-sm">
+      <h2 class="font-display font-bold text-lg">Événements culturels</h2>
+      <span class="chip chip-ghost">🌍 Afrique</span>
+    </div>
+    <div class="events-list mb-lg">
+      ${next3.map(ev => {
+        const days = daysUntil(ev.date);
+        const dayLabel = days === 0 ? 'Aujourd\'hui' : days === 1 ? 'Demain' : `Dans ${days} jours`;
+        const dateStr = ev.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        return `
+          <div class="event-row">
+            <div class="event-row__date" aria-hidden="true">
+              <div class="event-row__day">${ev.date.getDate()}</div>
+              <div class="event-row__month">${ev.date.toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase()}</div>
+            </div>
+            <div class="event-row__icon" aria-hidden="true">${ev.emoji}</div>
+            <div class="event-row__body">
+              <div class="font-semibold">${ev.name}</div>
+              <div class="text-xs text-muted">${ev.region} · ${dayLabel}</div>
+            </div>
+          </div>
+        `;
+      }).join('')}
     </div>
   `;
 }

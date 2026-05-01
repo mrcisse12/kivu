@@ -8,6 +8,8 @@ import { store } from '../store.js';
 import { navigate } from '../router.js';
 import { buildCurriculum, LANG_LABELS } from '../data/lessons.js';
 import { speech } from '../services/speech.js';
+import { fx } from '../services/audio-fx.js';
+import { notifications } from '../services/notifications.js';
 import { mascot } from '../components/mascot.js';
 import { icons } from '../components/icons.js';
 
@@ -381,7 +383,9 @@ renderLessonPlayer.mount = () => {
       if (!isAnswerCorrect(ex)) {
         mistakes++;
         loseHeart();
+        fx.wrong();
       } else {
+        fx.correct();
         // play correct answer for learning
         if (ex.type === 'multiple-choice' && speech.ttsSupported) {
           const targetLang = store.get('lessons')?.targetLang || 'swa';
@@ -422,9 +426,13 @@ renderLessonPlayer.mount = () => {
       if (!isAnswerCorrect(ex)) {
         mistakes++;
         loseHeart();
-      } else if (speech.ttsSupported) {
-        const targetLang = store.get('lessons')?.targetLang || 'swa';
-        setTimeout(() => speech.speak(ex.correct, targetLang), 200);
+        fx.wrong();
+      } else {
+        fx.correct();
+        if (speech.ttsSupported) {
+          const targetLang = store.get('lessons')?.targetLang || 'swa';
+          setTimeout(() => speech.speak(ex.correct, targetLang), 200);
+        }
       }
       rerender();
     })
@@ -481,12 +489,14 @@ function onMatchClick(side, value, rerender) {
   const pair = ex.pairs.find(p => p.fr === fr);
   if (pair && pair.target === target) {
     matched[fr] = target;
+    fx.correct();
     if (window.__KIVU__?.toast) {
       window.__KIVU__.toast('Bonne paire ! 🔥', { type: 'success', duration: 900 });
     }
   } else {
     mistakes++;
     loseHeart();
+    fx.wrong();
     if (window.__KIVU__?.toast) {
       window.__KIVU__.toast('Pas la bonne paire', { type: 'error', duration: 1200 });
     }
@@ -592,9 +602,19 @@ function finishLesson() {
     }
   });
 
-  /* ── 3. Toasts ──────────────────────────────────────────── */
-  if (leveledUp && window.__KIVU__?.toast) {
-    setTimeout(() => window.__KIVU__.toast(`🎉 Niveau ${newLevel} atteint !`, { type: 'success', duration: 3500 }), 600);
+  /* ── 3. Audio celebration + toasts ──────────────────────── */
+  fx.success();
+  setTimeout(() => fx.coin(), 350);
+  if (leveledUp) {
+    setTimeout(() => fx.levelUp(), 700);
+    notifications.levelUp(newLevel);
+    if (window.__KIVU__?.toast) {
+      setTimeout(() => window.__KIVU__.toast(`🎉 Niveau ${newLevel} atteint !`, { type: 'success', duration: 3500 }), 600);
+    }
+  }
+  // Streak milestones
+  if (newStreak > (oldState.user?.stats?.streak || 0) && [3, 7, 14, 30, 60, 100].includes(newStreak)) {
+    notifications.streak(newStreak);
   }
 
   // Badge unlock notifications
@@ -615,7 +635,11 @@ function finishLesson() {
   let badgeDelay = leveledUp ? 4200 : 900;
   BADGE_CHECK.forEach(b => {
     if (!b.cond(oldState) && b.cond(newState)) {
+      // Persist as a notification immediately
+      const iconChar = (b.label.match(/^[^\w\s]/) || ['🏆'])[0];
+      notifications.achievement(iconChar, b.label.replace(/^.*?—\s*/, ''));
       setTimeout(() => {
+        fx.badge();
         if (window.__KIVU__?.toast) {
           window.__KIVU__.toast(`Badge débloqué : ${b.label}`, { type: 'success', duration: 3000 });
         }

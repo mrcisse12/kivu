@@ -381,7 +381,20 @@ function renderAccount() {
 
 function renderNotifications(prefs) {
   const n = prefs.notifications || {};
+  const soundOn = prefs.soundEnabled !== false;
   return `
+    <div class="card mb-md">
+      <div class="font-bold text-lg mb-sm">🔊 Sons & ambiance</div>
+      <div class="settings-row">
+        <span class="settings-row__icon" style="color:var(--kivu-secondary);">${icons.speaker(20)}</span>
+        <div class="settings-row__body">
+          <div class="font-semibold">Effets sonores</div>
+          <div class="text-xs text-muted">Bonne réponse, niveau, badges, leçon réussie</div>
+        </div>
+        ${toggle('soundEnabled', soundOn)}
+      </div>
+    </div>
+
     <div class="card mb-md">
       <div class="font-bold text-lg mb-sm">Notifications</div>
 
