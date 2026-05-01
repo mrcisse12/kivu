@@ -54,6 +54,11 @@ const defaultState = {
   // Stories complétées (id strings)
   stories: {
     completed: []
+  },
+  // Dictionnaire — favoris + récemment consultés
+  dictionary: {
+    favorites: [],   // [entry.id, ...]
+    recent: []       // [entry.id, ...]  most recent first, max 24
   }
 };
 
@@ -70,7 +75,8 @@ function load() {
       ...defaultState,
       ...persisted,
       preferences: { ...defaultState.preferences, ...(persisted.preferences || {}) },
-      user: { ...defaultState.user, ...(persisted.user || {}), stats: { ...defaultState.user.stats, ...(persisted.user?.stats || {}) } }
+      user: { ...defaultState.user, ...(persisted.user || {}), stats: { ...defaultState.user.stats, ...(persisted.user?.stats || {}) } },
+      dictionary: { ...defaultState.dictionary, ...(persisted.dictionary || {}) }
     };
   } catch {
     return defaultState;
