@@ -59,6 +59,14 @@ const defaultState = {
   dictionary: {
     favorites: [],   // [entry.id, ...]
     recent: []       // [entry.id, ...]  most recent first, max 24
+  },
+  // Réseau d'amis KIVU
+  friends: {
+    list: [],               // [{ id, code, name, avatar, country, ... }]
+    activity: [],           // mini-feed (max 100, plus récent en premier)
+    received: [],           // encouragements reçus
+    suggestionsHidden: [],  // names of dismissed suggestions
+    seeded: false
   }
 };
 
@@ -76,7 +84,8 @@ function load() {
       ...persisted,
       preferences: { ...defaultState.preferences, ...(persisted.preferences || {}) },
       user: { ...defaultState.user, ...(persisted.user || {}), stats: { ...defaultState.user.stats, ...(persisted.user?.stats || {}) } },
-      dictionary: { ...defaultState.dictionary, ...(persisted.dictionary || {}) }
+      dictionary: { ...defaultState.dictionary, ...(persisted.dictionary || {}) },
+      friends: { ...defaultState.friends, ...(persisted.friends || {}) }
     };
   } catch {
     return defaultState;

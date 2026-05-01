@@ -10,6 +10,7 @@ import { buildCurriculum, LANG_LABELS } from '../data/lessons.js';
 import { speech } from '../services/speech.js';
 import { fx } from '../services/audio-fx.js';
 import { notifications } from '../services/notifications.js';
+import { recordSelfActivity } from '../services/friends.js';
 import { mascot } from '../components/mascot.js';
 import { icons } from '../components/icons.js';
 
@@ -646,6 +647,21 @@ function finishLesson() {
   // Streak milestones
   if (newStreak > (oldState.user?.stats?.streak || 0) && [3, 7, 14, 30, 60, 100].includes(newStreak)) {
     notifications.streak(newStreak);
+  }
+
+  /* ── Friends mini-feed: record this lesson as self-activity ── */
+  const langName = ({ swa:'Swahili', wol:'Wolof', bam:'Bambara', hau:'Haoussa', yor:'Yoruba', zul:'Zulu', ibo:'Igbo', dyu:'Dioula', lin:'Lingala' }[lessons.targetLang] || 'sa langue cible');
+  recordSelfActivity({
+    kind: 'lesson',
+    text: `as terminé la leçon ${currentLesson.day} en ${langName}${perfect ? ' — parfait ✨' : ''}`,
+    icon: perfect ? '💎' : '📚'
+  });
+  if (leveledUp) {
+    recordSelfActivity({
+      kind: 'level',
+      text: `as atteint le niveau ${newLevel} ! 🚀`,
+      icon: '🚀'
+    });
   }
 
   // Badge unlock notifications

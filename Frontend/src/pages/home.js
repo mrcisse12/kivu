@@ -5,6 +5,7 @@ import { icons } from '../components/icons.js';
 import { mascot } from '../components/mascot.js';
 import { speech } from '../services/speech.js';
 import { upcomingEvents, todayEvents, daysUntil } from '../data/events.js';
+import { getFriends, getActivityFeed } from '../services/friends.js';
 import { t } from '../i18n/index.js';
 
 // Tuiles fonctionnalités — emojis catégorie autorisés (gamification visuelle)
@@ -179,8 +180,11 @@ export function renderHome() {
       </button>
     </div>
 
-    <!-- Communauté -->
-    <h2 class="font-display font-bold text-lg mb-sm">${t('home.sectionCommunity')}</h2>
+    <!-- Communauté & amis -->
+    <div class="section-head mb-sm">
+      <h2 class="font-display font-bold text-lg">${t('home.sectionCommunity')}</h2>
+      <button class="link-btn text-xs" data-nav="/friends">Voir tous &rsaquo;</button>
+    </div>
     <div class="flex flex-col gap-xs mb-lg">
       ${renderCommunityPosts()}
     </div>
@@ -396,9 +400,22 @@ function renderCommunityPosts() {
   const firstName = (user.name || 'Vous').split(' ')[0];
   const avatar = user.avatar || '🧑🏾';
 
-  // Build dynamic posts based on user's real achievements
+  const friends = getFriends();
+  const friendActivity = getActivityFeed(20).filter(a => a.friendId && a.friend);
+
   const posts = [];
 
+  // 1. Friend activity (most recent first) — up to 2 entries
+  friendActivity.slice(0, 2).forEach(a => {
+    posts.push({
+      avatar: a.friend.avatar,
+      name: a.friend.name,
+      action: a.text,
+      time: relTimeShort(a.date)
+    });
+  });
+
+  // 2. Self achievements (one each)
   if (completedCount > 0) {
     const lang = { swa:'Swahili', wol:'Wolof', bam:'Bambara', hau:'Haoussa', yor:'Yoruba', zul:'Zulu', ibo:'Igbo', dyu:'Dioula' }[lessons.targetLang] || 'Swahili';
     posts.push({ avatar, name: firstName + ' (vous)', action: `a complété ${completedCount} leçon${completedCount > 1 ? 's' : ''} de ${lang}`, time: 'aujourd\'hui' });
@@ -410,21 +427,44 @@ function renderCommunityPosts() {
     posts.push({ avatar, name: firstName + ' (vous)', action: `a contribué ${contributions} enregistrement${contributions > 1 ? 's' : ''} de préservation 🛡️`, time: 'récemment' });
   }
 
-  // Fill up to 3 with community members
-  const COMMUNITY_POOL = [
-    { avatar: '👵🏾', name: 'Mamie Awa', action: 'a enregistré 12 proverbes Wolof', time: 'il y a 3 h' },
-    { avatar: '👨🏾‍🎓', name: 'Koffi M.', action: 'a terminé le niveau 15 en Dioula', time: 'il y a 5 h' },
-    { avatar: '👩🏾‍⚕️', name: 'Dr. Amina', action: 'a traduit 47 termes médicaux', time: 'hier' },
-    { avatar: '👨🏽‍💼', name: 'Seun A.', action: 'a partagé 8 proverbes Yoruba', time: 'il y a 2 h' },
-    { avatar: '👩🏿‍🎤', name: 'Fatou D.', action: 'est passée au niveau 20 en Swahili', time: 'il y a 1 h' },
-  ];
+  // 3. Friends online status — peeking at members not yet shown
+  const seenNames = new Set(posts.map(p => p.name));
+  friends.filter(f => f.online && !seenNames.has(f.name)).slice(0, 2).forEach(f => {
+    posts.push({
+      avatar: f.avatar,
+      name: f.name,
+      action: `est en ligne · niveau ${f.level} en ${({ swa:'Swahili', wol:'Wolof', bam:'Bambara', hau:'Haoussa', yor:'Yoruba', zul:'Zulu', ibo:'Igbo', dyu:'Dioula', lin:'Lingala' }[f.learning] || 'sa langue cible')}`,
+      time: 'en ligne'
+    });
+  });
 
-  while (posts.length < 3) {
-    const pool = COMMUNITY_POOL[posts.length % COMMUNITY_POOL.length];
-    posts.push(pool);
+  // 4. Fill up to 3 with community pool fallback
+  const COMMUNITY_POOL = [
+    { avatar: '👵🏾', name: 'Mamie Awa',  action: 'a enregistré 12 proverbes Wolof',     time: 'il y a 3 h' },
+    { avatar: '👨🏾‍🎓', name: 'Koffi M.',  action: 'a terminé le niveau 15 en Dioula',    time: 'il y a 5 h' },
+    { avatar: '👩🏾‍⚕️', name: 'Dr. Amina', action: 'a traduit 47 termes médicaux',         time: 'hier' },
+    { avatar: '👨🏽‍💼', name: 'Seun A.',   action: 'a partagé 8 proverbes Yoruba',         time: 'il y a 2 h' },
+    { avatar: '👩🏿‍🎤', name: 'Fatou D.',  action: 'est passée au niveau 20 en Swahili',  time: 'il y a 1 h' }
+  ];
+  let i = 0;
+  while (posts.length < 3 && i < COMMUNITY_POOL.length) {
+    const p = COMMUNITY_POOL[i++];
+    if (!seenNames.has(p.name)) posts.push(p);
   }
 
   return posts.slice(0, 3).map(p => renderCommunityPost(p.avatar, p.name, p.action, p.time)).join('');
+}
+
+function relTimeShort(iso) {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  const min = Math.round(ms / 60000);
+  if (min < 1) return 'à l\'instant';
+  if (min < 60) return `il y a ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `il y a ${h} h`;
+  const d = Math.round(h / 24);
+  return `il y a ${d} j`;
 }
 
 function computeGreeting() {

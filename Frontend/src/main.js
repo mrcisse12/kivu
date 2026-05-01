@@ -23,10 +23,12 @@ import { renderLogin } from './pages/login.js';
 import { renderCheckout } from './pages/checkout.js';
 import { renderStories } from './pages/stories.js';
 import { renderStoryPlayer } from './pages/story-player.js';
+import { renderFriends } from './pages/friends.js';
 import { setupInstallBanner } from './components/install-banner.js';
 import { setupMascotTracker } from './components/mascot-tracker.js';
 import { setupNotificationsBell } from './components/notifications-panel.js';
 import { seedWelcomeNotifications, notifications } from './services/notifications.js';
+import { ensureUserCode } from './services/friends.js';
 import { initI18n, onLangChange } from './i18n/index.js';
 import { applyPalette, applyDensity, applyContrast } from './theme.js';
 import { sync } from './services/sync.js';
@@ -50,6 +52,7 @@ const routes = {
   '/radio': renderRadio,
   '/stories': renderStories,
   '/dictionary': renderDictionary,
+  '/friends': renderFriends,
   '/login': renderLogin,
   '/onboarding': renderOnboarding
 };
@@ -165,6 +168,9 @@ setupMascotTracker();
 // Notifications system — bell + welcome notes
 seedWelcomeNotifications();
 setupNotificationsBell();
+
+// Ensure the user has a stable KIVU code (KIVU-XXX-NNNN)
+ensureUserCode();
 
 // ===========================================================
 // Cloud sync status indicator (top-right)

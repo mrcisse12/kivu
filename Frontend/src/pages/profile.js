@@ -28,6 +28,7 @@ const LANG_INFO = {
 };
 
 const MENU = [
+  { label: 'Mes amis',                 icon: icons.users,         color: '#FF6B9D',               path: '/friends' },
   { label: 'Paramètres',               icon: icons.settings,      color: 'var(--kivu-primary)',   path: '/settings' },
   { label: 'Abonnement',               icon: icons.star,          color: 'var(--kivu-accent)',    path: '/settings' },
   { label: 'Accessibilité',            icon: icons.accessibility, color: 'var(--color-accessibility)', path: '/accessibility' },
@@ -380,6 +381,14 @@ export function renderProfile() {
             <span>${user.countryFlag || ''}</span>
             <span>${user.country || 'Afrique'}</span>
           </div>
+          ${user.code ? `
+            <button class="profile-code-chip mt-xs" id="profile-copy-code"
+                    title="Copier mon code KIVU" aria-label="Code KIVU : ${escAttr(user.code)}">
+              ${icons.users(12)}
+              <span>${escAttr(user.code)}</span>
+              ${icons.copy(12)}
+            </button>
+          ` : ''}
           <div class="flex gap-xs mt-sm">
             <button class="btn btn-ghost btn-sm" id="edit-profile-btn">
               ${icons.settings(14)} Modifier
@@ -485,6 +494,20 @@ function miniStat(emoji, value, label) {
 /* ─────────────────────────── Mount ─────────────────────────────── */
 
 renderProfile.mount = function () {
+  // Copy KIVU code
+  document.getElementById('profile-copy-code')?.addEventListener('click', async () => {
+    const u = store.get('user') || {};
+    if (!u.code) return;
+    try {
+      await navigator.clipboard.writeText(u.code);
+      if (window.__KIVU__?.toast) {
+        window.__KIVU__.toast(`Code copié : ${u.code}`, { type: 'success', duration: 2000 });
+      }
+    } catch {
+      if (window.__KIVU__?.toast) window.__KIVU__.toast('Impossible de copier', { type: 'error' });
+    }
+  });
+
   // Edit profile button → open modal
   document.getElementById('edit-profile-btn')?.addEventListener('click', () => {
     const user = store.get('user') || {};
