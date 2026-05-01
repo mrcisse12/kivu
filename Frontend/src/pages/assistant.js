@@ -16,6 +16,7 @@ import { store } from '../store.js';
 import { speech } from '../services/speech.js';
 import { fx } from '../services/audio-fx.js';
 import { renderMarkdown, stripMarkdown } from '../services/markdown.js';
+import { offlineReply, isNetworkError } from '../services/offline-ai.js';
 import {
   listConversations,
   getActiveConversation,
@@ -89,12 +90,12 @@ export function renderAssistant() {
           ${conversations.length > 0 ? `<span class="ai-conv-count">${conversations.length}</span>` : ''}
         </button>
         <div class="assistant-header__title">
-          <span class="screen-icon" style="background:rgba(217,119,87,0.15); color:#D97757;">
-            ${icons.assistant(22)}
+          <span class="screen-icon assistant-header__icon">
+            ${icons.assistant(22, 'white')}
           </span>
           <div>
-            <div class="font-display font-bold" style="font-size:1.05rem;">Kivi · Assistant IA</div>
-            <div class="text-xs text-muted">${active ? escapeHtml(active.title) : 'Nouvelle discussion'}</div>
+            <div class="font-display font-bold" style="font-size:1.05rem; line-height:1.2;">Kivi</div>
+            <div class="text-xs text-muted" style="line-height:1.2;">${active && (active.messages || []).length > 0 ? escapeHtml(active.title) : 'Assistant IA'}</div>
           </div>
         </div>
         <div class="flex items-center gap-xs">
@@ -354,33 +355,46 @@ async function send(text) {
   inputValue = '';
   fx.click();
 
-  // 1. Push user message
+  // 1. Push user message only (no placeholder yet — typing bubble shows while waiting)
   pushMessage({ role: 'user', content: trimmed });
-  // 2. Push placeholder assistant message (will be filled by typewriter)
-  pushMessage({ role: 'assistant', content: '' });
 
   isStreaming = true;
   rerender(true);
 
+  let reply = '';
   try {
-    const { reply, provider, model } = await sendToAssistant();
-    lastProvider = provider;
-    lastModel = model;
-    // Type out the reply
-    await typeReply(reply || 'Pas de réponse.');
-    isStreaming = false;
-    rerender(true);
-
-    // TTS if enabled
-    if (speakReplies && reply && speech.ttsSupported) {
-      const plain = stripMarkdown(reply);
-      speech.speak(plain, 'fra', { rate: 1.0 });
-    }
+    const result = await sendToAssistant();
+    reply = result.reply;
+    lastProvider = result.provider;
+    lastModel = result.model;
   } catch (err) {
-    isStreaming = false;
-    updateLastMessage(`⚠️ Désolé, une erreur s'est produite : ${err?.message || err}.\n\nLe serveur IA est peut-être hors-ligne. Réessaie dans quelques instants.`);
-    lastProvider = 'offline';
-    rerender(true);
+    // Network failure → use the offline AI engine (rich knowledge base)
+    if (isNetworkError(err)) {
+      reply = offlineReply(trimmed);
+      lastProvider = 'offline';
+      lastModel = 'KIVU AI Engine';
+    } else {
+      // Other errors (server-side) → show actual error
+      reply = `⚠️ Une erreur s'est produite : ${err?.message || err}.\n\nLe serveur IA a renvoyé une erreur. Réessaie dans quelques instants.`;
+      lastProvider = 'offline';
+    }
+  }
+
+  // 2. Now push the assistant message bubble (empty), hide typing dots, start typewriter
+  pushMessage({ role: 'assistant', content: '' });
+  // Re-render: typing dots disappear, new empty AI bubble appears
+  rerender(true);
+
+  // 3. Type out the reply (typewriter effect on the new bubble)
+  await typeReply(reply || 'Pas de réponse.');
+  isStreaming = false;
+  // Final rerender to show the actions row + persisted state
+  rerender(true);
+
+  // TTS if enabled
+  if (speakReplies && reply && speech.ttsSupported) {
+    const plain = stripMarkdown(reply);
+    speech.speak(plain, 'fra', { rate: 1.0 });
   }
 }
 
@@ -523,20 +537,34 @@ renderAssistant.mount = () => {
       if (isStreaming) return;
       const conv = getActiveConversation();
       if (!conv || !conv.messages?.length) return;
-      // Pop last assistant message; previous user message stays
+      // Pop last assistant message — previous user message stays.
+      // Find that user message to feed offline fallback if needed.
+      const lastUser = [...(conv.messages || [])].reverse().find(m => m.role === 'user')?.content || '';
       popLastMessage();
-      pushMessage({ role: 'assistant', content: '' });
       isStreaming = true;
       fx.click();
       rerender(true);
+
+      let reply = '';
       try {
-        const { reply, provider, model } = await sendToAssistant();
-        lastProvider = provider;
-        lastModel = model;
-        await typeReply(reply || 'Pas de réponse.');
+        const result = await sendToAssistant();
+        reply = result.reply;
+        lastProvider = result.provider;
+        lastModel = result.model;
       } catch (err) {
-        updateLastMessage(`⚠️ Erreur : ${err?.message || err}`);
+        if (isNetworkError(err)) {
+          reply = offlineReply(lastUser);
+          lastProvider = 'offline';
+          lastModel = 'KIVU AI Engine';
+        } else {
+          reply = `⚠️ Erreur : ${err?.message || err}`;
+          lastProvider = 'offline';
+        }
       }
+      // Push empty assistant message, hide typing dots, animate
+      pushMessage({ role: 'assistant', content: '' });
+      rerender(true);
+      await typeReply(reply || 'Pas de réponse.');
       isStreaming = false;
       rerender(true);
     })

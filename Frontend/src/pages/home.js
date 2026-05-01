@@ -36,10 +36,6 @@ export function renderHome() {
         <div class="text-sm text-muted">${greeting}</div>
         <div class="screen-title">${firstName}</div>
       </div>
-      <button class="icon-btn icon-btn--bell" aria-label="${t('common.new')}">
-        ${icons.bell(22)}
-        <span class="notification-dot" aria-hidden="true"></span>
-      </button>
     </div>
 
     <!-- Hero XP Card avec orbs décoratifs animés -->
