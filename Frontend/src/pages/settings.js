@@ -391,6 +391,7 @@ function renderAccount() {
 function renderNotifications(prefs) {
   const n = prefs.notifications || {};
   const soundOn = prefs.soundEnabled !== false;
+  const premiumVoice = prefs.premiumVoice === true;
   return `
     <div class="card mb-md">
       <div class="font-bold text-lg mb-sm">🔊 Sons & ambiance</div>
@@ -401,6 +402,18 @@ function renderNotifications(prefs) {
           <div class="text-xs text-muted">Bonne réponse, niveau, badges, leçon réussie</div>
         </div>
         ${toggle('soundEnabled', soundOn)}
+      </div>
+      <div class="settings-row" style="border-top:1px solid var(--divider); padding-top:12px; margin-top:12px;">
+        <span class="settings-row__icon" style="color:var(--kivu-tertiary);">${icons.mic(20)}</span>
+        <div class="settings-row__body">
+          <div class="font-semibold">Voix IA premium 🎙️</div>
+          <div class="text-xs text-muted">Voix neurales (ElevenLabs/OpenAI) pour les langues africaines · cache local pour rejouer hors-ligne</div>
+        </div>
+        ${toggle('premiumVoice', premiumVoice)}
+      </div>
+      <div class="text-xs text-muted mt-sm" style="padding: 0 4px;">
+        💡 Nécessite une clé API <code>ELEVENLABS_API_KEY</code> ou <code>OPENAI_API_KEY</code> sur le backend.
+        <button class="link-btn" data-action="test-premium-voice" style="font-weight: 700;">Tester la voix</button>
       </div>
     </div>
 
@@ -755,6 +768,41 @@ renderSettings.mount = () => {
       // Navigate home then start the tutorial after the page renders
       navigate('/');
       setTimeout(() => startTutorial({ force: true }), 700);
+    })
+  );
+
+  // Test premium voice from settings
+  document.querySelectorAll('[data-action="test-premium-voice"]').forEach(btn =>
+    btn.addEventListener('click', async () => {
+      const wasEnabled = (store.get('preferences') || {}).premiumVoice === true;
+      btn.textContent = '⏳ Génération…';
+      try {
+        const { checkPremiumSupport, fetchPremiumVoice } = await import('../services/premium-voice.js');
+        const support = await checkPremiumSupport(true);
+        if (!support.available) {
+          if (window.__KIVU__?.toast) {
+            window.__KIVU__.toast('Backend offline ou clé API manquante', { type: 'warning', duration: 3000 });
+          }
+          btn.textContent = 'Tester la voix';
+          return;
+        }
+        const result = await fetchPremiumVoice('Bonjour ! Je suis Kivi, ta tutrice KIVU. Je peux te parler dans plus de 2 000 langues africaines.', 'kivi');
+        if (!result?.blob) {
+          if (window.__KIVU__?.toast) window.__KIVU__.toast('Échec de la synthèse', { type: 'error' });
+          btn.textContent = 'Tester la voix';
+          return;
+        }
+        const url = URL.createObjectURL(result.blob);
+        const audio = new Audio(url);
+        audio.onended = () => URL.revokeObjectURL(url);
+        audio.play();
+        if (window.__KIVU__?.toast) {
+          window.__KIVU__.toast(`Voix : ${support.preferred} ✨`, { type: 'success', duration: 2000 });
+        }
+      } catch (e) {
+        if (window.__KIVU__?.toast) window.__KIVU__.toast('Erreur : ' + (e.message || e), { type: 'error' });
+      }
+      btn.textContent = 'Tester la voix';
     })
   );
 

@@ -6,9 +6,23 @@
  *  - Mapping langue interne KIVU (3 lettres) → BCP-47 navigateur
  *  - Sélection automatique de la **meilleure voix humaine** dispo
  *    (Google Neural / Microsoft Natural / Amazon / Apple Premium > standard)
+ *  - Intégration des voix premium IA (ElevenLabs / OpenAI TTS) si activé
  *  - Cache des voix pour éviter le re-tri à chaque appel
  *  - Gestion d'erreur propre
  */
+
+/** Returns true if user enabled premium IA voices in settings.
+    Read directly from localStorage to avoid circular import with store.js */
+function isPremiumVoiceEnabled() {
+  try {
+    const raw = localStorage.getItem('kivu.state');
+    if (!raw) return false;
+    const state = JSON.parse(raw);
+    return state?.preferences?.premiumVoice === true;
+  } catch {
+    return false;
+  }
+}
 
 // Mapping interne (KIVU codes 3 lettres) → BCP-47 navigateur
 // Pour les langues africaines mineures où aucune voix n'existe, on tombe sur la
@@ -307,7 +321,7 @@ export const speech = {
   async speak(text, kivuLang, { rate = null, pitch = null, volume = 1.0, preferredVoiceURI = null, profileOverride = null } = {}) {
     if (!text) return { source: 'none' };
 
-    // 1. Try the human-recorded voice library first
+    // 1. Try the human-recorded voice library first (always wins, even offline)
     try {
       const { voiceLibrary } = await import('./voice-library.js');
       const blob = await voiceLibrary.get(kivuLang, text);
@@ -328,9 +342,33 @@ export const speech = {
         currentAudio = null;
         return { source: 'human' };
       }
-    } catch { /* fall back to TTS */ }
+    } catch { /* fall back to premium / TTS */ }
 
-    // 2. Fallback: SpeechSynthesis API (TTS) with language-adapted profile
+    // 2. Try premium IA voice if enabled in settings
+    if (isPremiumVoiceEnabled()) {
+      try {
+        const { fetchPremiumVoice } = await import('./premium-voice.js');
+        const result = await fetchPremiumVoice(text, kivuLang);
+        if (result?.blob) {
+          const url = URL.createObjectURL(result.blob);
+          const audio = new Audio(url);
+          audio.volume = volume;
+          audio.playbackRate = Math.max(0.5, Math.min(2, rate ?? 1.0));
+          if (this.ttsSupported) window.speechSynthesis.cancel();
+          if (currentAudio) { try { currentAudio.pause(); } catch {} }
+          currentAudio = audio;
+          await new Promise(resolve => {
+            audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+            audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+            audio.play().catch(() => { URL.revokeObjectURL(url); resolve(); });
+          });
+          currentAudio = null;
+          return { source: 'premium', provider: result.source };
+        }
+      } catch { /* fall back to native TTS */ }
+    }
+
+    // 3. Fallback: SpeechSynthesis API (TTS) with language-adapted profile
     if (!this.ttsSupported) return { source: 'none' };
     window.speechSynthesis.cancel();
 
@@ -360,9 +398,37 @@ export const speech = {
   /**
    * Speak with the distinctive Kivi voice (the AI assistant).
    * Always uses the same warm female French voice across the app.
+   * Uses premium IA voice if enabled in settings.
    */
   async speakAsKivi(text, opts = {}) {
-    if (!this.ttsSupported || !text) return { source: 'none' };
+    if (!text) return { source: 'none' };
+
+    // 1. Try premium IA voice with Kivi's signature voice profile
+    if (isPremiumVoiceEnabled()) {
+      try {
+        const { fetchPremiumVoice } = await import('./premium-voice.js');
+        const result = await fetchPremiumVoice(text, 'kivi');
+        if (result?.blob) {
+          if (this.ttsSupported) window.speechSynthesis.cancel();
+          if (currentAudio) { try { currentAudio.pause(); } catch {} }
+          const url = URL.createObjectURL(result.blob);
+          const audio = new Audio(url);
+          audio.volume = opts.volume ?? 1.0;
+          audio.playbackRate = opts.rate ?? 1.0;
+          currentAudio = audio;
+          await new Promise(resolve => {
+            audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+            audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+            audio.play().catch(() => { URL.revokeObjectURL(url); resolve(); });
+          });
+          if (currentAudio === audio) currentAudio = null;
+          return { source: 'premium', provider: result.source };
+        }
+      } catch { /* fall back to native TTS */ }
+    }
+
+    // 2. Fallback: Web Speech API with the warm French female voice
+    if (!this.ttsSupported) return { source: 'none' };
     window.speechSynthesis.cancel();
     if (currentAudio) { try { currentAudio.pause(); } catch {} }
     const u = new SpeechSynthesisUtterance(text);
