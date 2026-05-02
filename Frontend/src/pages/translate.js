@@ -4,6 +4,7 @@ import { icons } from '../components/icons.js';
 import { api, ApiError } from '../services/api.js';
 import { speech } from '../services/speech.js';
 import { confirmModal } from '../services/dialog.js';
+import { offlineTranslate, isNetworkError } from '../services/offline-translator.js';
 
 let isRecording = false;
 let isTranslating = false;
@@ -96,7 +97,7 @@ export function renderTranslate() {
         : `<div id="source-text" class="translate-card__body" data-empty="${!sourceText && !isRecording}">
              ${isRecording
                ? '<span class="recording-text">Écoute en cours…</span>'
-               : (sourceText ? escapeHtml(sourceText) : 'Parlez ou écrivez ici…')}
+               : (sourceText ? escapeHtml(sourceText) : 'Touchez le micro pour parler 🎙️')}
            </div>`}
     </div>
 
@@ -177,8 +178,9 @@ export function renderTranslate() {
     ${!sttOk && currentMode === 'voice' ? `
       <div class="card mb-md" style="background:rgba(250,179,51,0.10); border:1px solid rgba(250,179,51,0.3);">
         <div class="text-sm" style="color:#B07700;">
-          <strong>Reconnaissance vocale indisponible.</strong> Votre navigateur ne supporte
-          pas SpeechRecognition. Utilisez Chrome ou Edge, ou le mode <em>Texte</em>.
+          <strong>🎙️ Mode vocal indisponible</strong> sur ce navigateur — bascule vers
+          <button class="link-btn" data-action="mode-text" style="font-weight:700;">le mode Texte</button>
+          ou utilise Chrome / Edge.
         </div>
       </div>
     ` : ''}
@@ -798,10 +800,61 @@ renderTranslate.mount = () => {
         setTimeout(() => speech.speak(result.translatedText, targetLanguage), 200);
       }
     } catch (err) {
+      // Network failure → try offline dictionary translation
+      if (isNetworkError(err)) {
+        const offlineResult = offlineTranslate(sourceText, sourceLanguage, targetLanguage);
+        if (offlineResult) {
+          translation = offlineResult;
+          isTranslating = false;
+          // Update history same as the success path
+          const fromLang = findLanguage(sourceLanguage);
+          const toLang = findLanguage(targetLanguage);
+          store.update('user', u => ({
+            ...u,
+            stats: { ...u.stats, translationsCount: (u.stats.translationsCount || 0) + 1 }
+          }));
+          store.update('translation', t => {
+            const entry = {
+              id: 'tr_' + Date.now(),
+              source: sourceText.trim(),
+              target: offlineResult.translatedText,
+              sourceLang: sourceLanguage,
+              targetLang: targetLanguage,
+              fromFlag: fromLang?.flag || '🌐',
+              toFlag: toLang?.flag || '🌐',
+              date: new Date().toISOString(),
+              favorite: false,
+              offline: true
+            };
+            const prev = (t.history || []).filter(h =>
+              !(h.source === entry.source && h.targetLang === entry.targetLang)
+            );
+            return { ...t, history: [entry, ...prev].slice(0, 100) };
+          });
+          rerender();
+          if (speech.ttsSupported) {
+            setTimeout(() => speech.speak(offlineResult.translatedText, targetLanguage), 200);
+          }
+          // Subtle info toast (not an error)
+          if (window.__KIVU__?.toast) {
+            window.__KIVU__.toast('Traduction depuis le dictionnaire local', { type: 'info', duration: 1800 });
+          }
+          return;
+        }
+        // No dictionary match either
+        isTranslating = false;
+        lastError = 'Mode hors-ligne · ce mot n\'est pas dans le dictionnaire local';
+        rerender();
+        if (window.__KIVU__?.toast) {
+          window.__KIVU__.toast(lastError, { type: 'warning', duration: 2400 });
+        }
+        return;
+      }
+      // Real backend error (HTTP error, not network)
       isTranslating = false;
       lastError = err instanceof ApiError
         ? `Backend : ${err.message}`
-        : 'Backend hors-ligne — vérifiez le serveur Flask.';
+        : `Erreur : ${err?.message || err}`;
       rerender();
       if (window.__KIVU__?.toast) {
         window.__KIVU__.toast(lastError, { type: 'error' });

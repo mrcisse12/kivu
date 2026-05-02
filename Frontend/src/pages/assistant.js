@@ -395,7 +395,7 @@ async function send(text) {
   // TTS if enabled
   if (speakReplies && reply && speech.ttsSupported) {
     const plain = stripMarkdown(reply);
-    speech.speak(plain, 'fra', { rate: 1.0 });
+    speech.speakAsKivi(plain);
   }
 }
 
@@ -534,7 +534,7 @@ renderAssistant.mount = () => {
       const msg = conv?.messages?.[idx];
       if (!msg || !speech.ttsSupported) return;
       const plain = stripMarkdown(msg.content);
-      speech.speak(plain, 'fra', { rate: 1.0 });
+      speech.speakAsKivi(plain);
       fx.click();
     })
   );

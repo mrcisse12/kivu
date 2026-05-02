@@ -33,17 +33,67 @@ export function toBcp47(kivuCode) {
   return LANG_MAP[kivuCode] || 'fr-FR';
 }
 
+/* ─── Per-language voice profiles ──────────────────────────
+   Each African language gets a personality : preferred gender,
+   warmth, locale fallback chain, and TTS rate/pitch tuning that
+   feels natural for that language.
+
+   `chain` is a list of BCP-47 locales tried in order. The first
+   one that has a voice available is used.
+   `genderPref` favors male/female voices when available.
+   `rate` / `pitch` are global multipliers for that language.
+*/
+const VOICE_PROFILES = {
+  // African Bantu languages — warmer, slower, female preferred
+  swa: { chain: ['sw-KE', 'sw-TZ', 'sw', 'en-KE', 'en-NG'], genderPref: 'female', rate: 0.92, pitch: 1.05 },
+  zul: { chain: ['zu-ZA', 'zu', 'en-ZA', 'af-ZA'],          genderPref: 'female', rate: 0.92, pitch: 1.0  },
+  lin: { chain: ['fr-CD', 'fr-CG', 'fr-FR'],                genderPref: 'female', rate: 0.95, pitch: 1.05 },
+  // West African — French fallback with regional accent if available
+  wol: { chain: ['fr-SN', 'fr-FR', 'fr'],                   genderPref: 'female', rate: 0.95, pitch: 1.05 },
+  bam: { chain: ['fr-ML', 'fr-BF', 'fr-FR', 'fr'],          genderPref: 'female', rate: 0.95, pitch: 1.0  },
+  dyu: { chain: ['fr-CI', 'fr-FR', 'fr'],                   genderPref: 'female', rate: 0.95, pitch: 1.05 },
+  // Nigerian languages — try native, fall back to en-NG
+  hau: { chain: ['ha-NG', 'ha', 'en-NG', 'en-GB'],          genderPref: 'male',   rate: 0.95, pitch: 0.95 },
+  yor: { chain: ['yo-NG', 'yo', 'en-NG', 'en-GB'],          genderPref: 'female', rate: 0.92, pitch: 1.05 },
+  ibo: { chain: ['ig-NG', 'ig', 'en-NG', 'en-GB'],          genderPref: 'female', rate: 0.95, pitch: 1.05 },
+  // Horn of Africa
+  amh: { chain: ['am-ET', 'am', 'en-GB'],                   genderPref: 'female', rate: 0.95, pitch: 1.0  },
+  // Burkina-Bisa fallback
+  bis: { chain: ['fr-BF', 'fr-FR', 'fr'],                   genderPref: 'female', rate: 0.95, pitch: 1.05 },
+  // Major UI languages
+  fra: { chain: ['fr-FR', 'fr-CA', 'fr-BE', 'fr'],          genderPref: 'female', rate: 1.0,  pitch: 1.0  },
+  eng: { chain: ['en-US', 'en-GB', 'en-AU', 'en'],          genderPref: 'female', rate: 1.0,  pitch: 1.0  },
+  ara: { chain: ['ar-SA', 'ar-EG', 'ar-MA', 'ar'],          genderPref: 'female', rate: 0.95, pitch: 1.0  },
+  por: { chain: ['pt-BR', 'pt-PT', 'pt'],                   genderPref: 'female', rate: 1.0,  pitch: 1.0  }
+};
+
+function getProfile(kivuCode) {
+  return VOICE_PROFILES[kivuCode] || VOICE_PROFILES.fra;
+}
+
 /* ─── Voice quality scoring ────────────────────────────────
-   We rank voices by perceived "humanness" using known patterns:
-   - "Google" voices in Chrome → neural, natural prosody
+   We rank voices by perceived "humanness" + match to profile.
    - "Microsoft ... Natural" voices in Edge → very high quality
    - "Premium" / "Enhanced" / "Neural" suffixes → top tier
+   - "Google" voices in Chrome → neural, natural prosody
    - Apple "Siri" or "Premium" voices → excellent
-   - "Amazon Polly" if present
    - Default voices → lowest score
    - Children/novelty voices → penalized
+   - Voice gender matching profile preference → +20
 */
-function voiceScore(v) {
+const FEMALE_NAMES = /\b(female|woman|amélie|aurelie|audrey|julie|marie|sophie|charlotte|emma|olivia|chloe|denise|hortense|virginie|samantha|karen|moira|fiona|tessa|vicki|allison|ava|susan|alva|tala|sara|naayf|laila|sahar|lisa|catherine|natasha|hazel|aria|jenny|ana|francisca|joana|paulina|mireia|camila|esperanza|paloma|nicki|natalia|monica|hala)\b/i;
+const MALE_NAMES = /\b(male\b|man\b|thomas|paul|nicolas|henri|alex|daniel|tom|fred|jorge|diego|ricardo|hassan|tarik|ahmed|jamal|david|james|john|james|hugo|guillaume|matteo|antonio|diego|enrique|jorge)\b/i;
+
+function inferGender(v) {
+  if (!v) return 'unknown';
+  if (/\bfemale\b/i.test(v.name)) return 'female';
+  if (/\bmale\b/i.test(v.name)) return 'male';
+  if (FEMALE_NAMES.test(v.name)) return 'female';
+  if (MALE_NAMES.test(v.name)) return 'male';
+  return 'unknown';
+}
+
+function voiceScore(v, genderPref = null) {
   if (!v) return 0;
   const name = v.name || '';
   let score = 0;
@@ -59,7 +109,7 @@ function voiceScore(v) {
   if (/\bonline\b/i.test(name))      score += 30;   // Cloud-backed voices
 
   // Penalize novelty / robotic voices
-  if (/\b(novelty|cellos|bells|bubbles|good news|bad news|albert|bahh|deranged|hysterical|trinoids|whisper|zarvox|jester|junior|princess|pipe organ|organ)\b/i.test(name)) score -= 50;
+  if (/\b(novelty|cellos|bells|bubbles|good news|bad news|albert|bahh|deranged|hysterical|trinoids|whisper|zarvox|jester|junior|princess|pipe organ|organ|grandma|grandpa|bad)\b/i.test(name)) score -= 50;
   if (/\beSpeak\b/i.test(name))      score -= 100;  // robotic open-source
 
   // Local vs cloud: cloud usually better (default flag is set on lower-quality)
@@ -68,6 +118,14 @@ function voiceScore(v) {
 
   // Slight preference for adult-sounding voices (heuristic)
   if (/\b(child|kid|junior)\b/i.test(name)) score -= 30;
+
+  // Gender preference matching (+20 when matching profile)
+  if (genderPref) {
+    const g = inferGender(v);
+    if (g === genderPref) score += 25;
+    else if (g === 'unknown') score += 0;
+    else score -= 10; // wrong gender for this profile
+  }
 
   return score;
 }
@@ -97,24 +155,66 @@ if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
   } catch { /* older browsers */ }
 }
 
-/** Find the best-sounding voice for a given BCP-47 locale. */
+/** Pick the best voice given a KIVU language code, using the profile chain. */
+function pickVoiceForLang(kivuLang) {
+  const voices = getAllVoices();
+  if (!voices.length) return { voice: null, profile: getProfile(kivuLang), bcp: toBcp47(kivuLang) };
+  const profile = getProfile(kivuLang);
+
+  // Walk the chain — first non-empty match wins
+  for (const bcp of profile.chain) {
+    const lang2 = bcp.split('-')[0];
+    const exact = voices.filter(v => v.lang === bcp);
+    const family = voices.filter(v => v.lang.startsWith(lang2 + '-') || v.lang === lang2);
+    const candidates = exact.length ? exact : family;
+    if (candidates.length) {
+      candidates.sort((a, b) => voiceScore(b, profile.genderPref) - voiceScore(a, profile.genderPref));
+      return { voice: candidates[0], profile, bcp };
+    }
+  }
+  // Last resort: any voice
+  const all = [...voices].sort((a, b) => voiceScore(b, profile.genderPref) - voiceScore(a, profile.genderPref));
+  return { voice: all[0] || null, profile, bcp: toBcp47(kivuLang) };
+}
+
+/** Legacy helper kept for compatibility. */
 function pickBestVoice(bcp47) {
   const voices = getAllVoices();
   if (!voices.length) return null;
-  const lang2 = bcp47.split('-')[0]; // 'fr-FR' → 'fr'
-
-  // 1. Voices matching exact locale
+  const lang2 = bcp47.split('-')[0];
   const exact = voices.filter(v => v.lang === bcp47);
-  // 2. Voices matching language family (fr-* for fr-FR)
   const family = voices.filter(v => v.lang.startsWith(lang2 + '-') || v.lang === lang2);
-  // 3. All voices (last resort)
-  const all = voices;
-
-  const candidates = exact.length ? exact : (family.length ? family : all);
-  // Sort by quality score desc
+  const candidates = exact.length ? exact : (family.length ? family : voices);
   candidates.sort((a, b) => voiceScore(b) - voiceScore(a));
   return candidates[0] || null;
 }
+
+/* ─── Distinctive Kivi voice (the AI assistant) ────────────
+   Kivi uses a consistent, recognizable voice across all sessions.
+   Preference order :
+     1. French-Canadian or French-FR female voice for warmth
+     2. Specific names known to be expressive (Amélie, Audrey, Marie, Aurelie)
+     3. Microsoft Denise/Brigitte (Natural Edge voices)
+     4. Apple Amélie/Thomas (premium Apple voices)
+   Pitch slightly higher + slightly slower = friendly tutor feel.
+*/
+const KIVI_NAME_HINTS = /\b(am[eé]lie|aurelie|audrey|marie|denise|brigitte|julie|charlotte|sophie|emma|sarah|natasha|hortense)\b/i;
+
+function pickKiviVoice() {
+  const voices = getAllVoices();
+  if (!voices.length) return null;
+  // Prefer French female with friendly name hints
+  const french = voices.filter(v => v.lang.startsWith('fr'));
+  // Score = quality + +50 for matching a known warm-named voice
+  const scored = french.map(v => ({
+    v,
+    s: voiceScore(v, 'female') + (KIVI_NAME_HINTS.test(v.name) ? 50 : 0)
+  }));
+  scored.sort((a, b) => b.s - a.s);
+  return scored[0]?.v || pickBestVoice('fr-FR');
+}
+
+const KIVI_PROFILE = { rate: 0.97, pitch: 1.10 }; // friendly, slightly higher pitched
 
 /* ─── Detection ──────────────────────────────────────────── */
 const Recognition =
@@ -132,7 +232,18 @@ export const speech = {
    */
   getActiveVoice(kivuLang) {
     if (!this.ttsSupported) return null;
-    return pickBestVoice(toBcp47(kivuLang));
+    return pickVoiceForLang(kivuLang).voice;
+  },
+
+  /** Returns Kivi's distinctive voice (used by the assistant). */
+  getKiviVoice() {
+    if (!this.ttsSupported) return null;
+    return pickKiviVoice();
+  },
+
+  /** Returns the language profile (rate/pitch/genderPref/chain). */
+  getLanguageProfile(kivuLang) {
+    return getProfile(kivuLang);
   },
 
   /** List all installed voices (used by settings page voice picker) */
@@ -186,14 +297,14 @@ export const speech = {
   /**
    * Joue le texte. Priorité :
    *   1) Enregistrement humain réel dans la voix-library (si disponible)
-   *   2) Sinon, synthèse vocale TTS avec la meilleure voix dispo
+   *   2) Sinon, synthèse vocale TTS avec la voix adaptée à la langue
    *
    * @param {string} text
    * @param {string} kivuLang
-   * @param {object} opts { rate, pitch, volume, preferredVoiceURI? }
+   * @param {object} opts { rate, pitch, volume, preferredVoiceURI?, profileOverride? }
    * @returns {Promise<{ source: 'human'|'tts'|'none' }>}
    */
-  async speak(text, kivuLang, { rate = 1.0, pitch = 1.0, volume = 1.0, preferredVoiceURI = null } = {}) {
+  async speak(text, kivuLang, { rate = null, pitch = null, volume = 1.0, preferredVoiceURI = null, profileOverride = null } = {}) {
     if (!text) return { source: 'none' };
 
     // 1. Try the human-recorded voice library first
@@ -204,10 +315,9 @@ export const speech = {
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         audio.volume = volume;
-        audio.playbackRate = Math.max(0.5, Math.min(2, rate));
-        // Cancel any TTS in progress so we don't play both
+        const playbackRate = rate ?? 1.0;
+        audio.playbackRate = Math.max(0.5, Math.min(2, playbackRate));
         if (this.ttsSupported) window.speechSynthesis.cancel();
-        // Stop any previous human-voice playback
         if (currentAudio) { try { currentAudio.pause(); } catch {} }
         currentAudio = audio;
         await new Promise(resolve => {
@@ -220,25 +330,52 @@ export const speech = {
       }
     } catch { /* fall back to TTS */ }
 
-    // 2. Fallback: SpeechSynthesis API (TTS)
+    // 2. Fallback: SpeechSynthesis API (TTS) with language-adapted profile
     if (!this.ttsSupported) return { source: 'none' };
     window.speechSynthesis.cancel();
 
+    const { voice, profile, bcp } = pickVoiceForLang(kivuLang);
     const u = new SpeechSynthesisUtterance(text);
-    const bcp = toBcp47(kivuLang);
-    u.lang = bcp;
-    u.rate = rate;
-    u.pitch = pitch;
+    u.lang = voice?.lang || bcp;
+    u.rate = rate ?? profileOverride?.rate ?? profile.rate;
+    u.pitch = pitch ?? profileOverride?.pitch ?? profile.pitch;
     u.volume = volume;
 
-    // Use user-pinned voice if provided
+    // Use user-pinned voice if provided, else profile-best
     let chosen = null;
     if (preferredVoiceURI) {
       chosen = getAllVoices().find(v => v.voiceURI === preferredVoiceURI) || null;
     }
-    if (!chosen) chosen = pickBestVoice(bcp);
+    if (!chosen) chosen = voice;
     if (chosen) u.voice = chosen;
 
+    window.speechSynthesis.speak(u);
+    await new Promise(resolve => {
+      u.onend = resolve;
+      u.onerror = resolve;
+    });
+    return { source: 'tts' };
+  },
+
+  /**
+   * Speak with the distinctive Kivi voice (the AI assistant).
+   * Always uses the same warm female French voice across the app.
+   */
+  async speakAsKivi(text, opts = {}) {
+    if (!this.ttsSupported || !text) return { source: 'none' };
+    window.speechSynthesis.cancel();
+    if (currentAudio) { try { currentAudio.pause(); } catch {} }
+    const u = new SpeechSynthesisUtterance(text);
+    const voice = pickKiviVoice();
+    if (voice) {
+      u.voice = voice;
+      u.lang = voice.lang;
+    } else {
+      u.lang = 'fr-FR';
+    }
+    u.rate = opts.rate ?? KIVI_PROFILE.rate;
+    u.pitch = opts.pitch ?? KIVI_PROFILE.pitch;
+    u.volume = opts.volume ?? 1.0;
     window.speechSynthesis.speak(u);
     await new Promise(resolve => {
       u.onend = resolve;
@@ -251,17 +388,17 @@ export const speech = {
   speakTTS(text, kivuLang, opts = {}) {
     if (!this.ttsSupported || !text) return Promise.resolve({ source: 'none' });
     window.speechSynthesis.cancel();
+    const { voice, profile, bcp } = pickVoiceForLang(kivuLang);
     const u = new SpeechSynthesisUtterance(text);
-    const bcp = toBcp47(kivuLang);
-    u.lang = bcp;
-    u.rate = opts.rate ?? 1.0;
-    u.pitch = opts.pitch ?? 1.0;
+    u.lang = voice?.lang || bcp;
+    u.rate = opts.rate ?? profile.rate;
+    u.pitch = opts.pitch ?? profile.pitch;
     u.volume = opts.volume ?? 1.0;
     let chosen = null;
     if (opts.preferredVoiceURI) {
       chosen = getAllVoices().find(v => v.voiceURI === opts.preferredVoiceURI) || null;
     }
-    if (!chosen) chosen = pickBestVoice(bcp);
+    if (!chosen) chosen = voice;
     if (chosen) u.voice = chosen;
     window.speechSynthesis.speak(u);
     return new Promise(resolve => {
