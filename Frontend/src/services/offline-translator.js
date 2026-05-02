@@ -42,43 +42,64 @@ function buildLookup() {
 }
 
 /**
+ * Find an entry by trying multiple source languages in order.
+ * This makes the translator robust when users type in French even
+ * when the source language is set to an African one.
+ */
+function lookupFlexible(normalized, primaryKey) {
+  const lookup = buildLookup();
+  // Order : declared source first, then French, English, then all others
+  const order = [primaryKey, 'fr', 'en', ...LANG_KEYS.filter(l => l !== primaryKey && l !== 'fr' && l !== 'en')];
+  for (const lang of order) {
+    const entry = lookup[lang]?.[normalized];
+    if (entry) return { entry, foundIn: lang };
+  }
+  return null;
+}
+
+/**
  * Translate text from `fromAppLang` (3-char) to `toAppLang`.
  * Returns { translatedText, confidence, offline: true, source: 'dictionary' }
  * or null if no translation could be found (callers should display an error).
+ *
+ * Smart fallback : if no match in declared source language, also tries
+ * French, English, then all other languages. If translating from a non-
+ * declared source, we lower confidence accordingly.
  */
 export function offlineTranslate(text, fromAppLang, toAppLang) {
-  const fromKey = APP_TO_DICT[fromAppLang];
+  const fromKey = APP_TO_DICT[fromAppLang] || 'fr';
   const toKey = APP_TO_DICT[toAppLang];
-  if (!fromKey || !toKey || !text || !text.trim()) return null;
+  if (!toKey || !text || !text.trim()) return null;
 
-  const lookup = buildLookup();
   const norm = normalize(text);
 
-  // 1) Exact whole-phrase match
-  const direct = lookup[fromKey]?.[norm];
-  if (direct && direct[toKey]) {
+  // 1) Exact whole-phrase match (with smart source fallback)
+  const direct = lookupFlexible(norm, fromKey);
+  if (direct && direct.entry[toKey]) {
+    const matchedSource = direct.foundIn === fromKey;
     return {
-      translatedText: direct[toKey],
-      confidence: 0.95,
+      translatedText: direct.entry[toKey],
+      confidence: matchedSource ? 0.95 : 0.78,
       offline: true,
-      source: 'dictionary',
+      source: matchedSource ? 'dictionary' : `dictionary-from-${direct.foundIn}`,
       durationMs: 0
     };
   }
 
-  // 2) Word-by-word translation
+  // 2) Word-by-word translation with smart fallback per word
   const words = text.split(/(\s+|[.,!?;:])/);
   let foundAny = false;
+  let allMatchedDeclaredSource = true;
   const translatedWords = words.map(w => {
     if (!w.trim()) return w;
     const punct = /^[.,!?;:]+$/.test(w);
     if (punct) return w;
     const normalizedWord = normalize(w);
-    const entry = lookup[fromKey]?.[normalizedWord];
-    if (entry && entry[toKey]) {
+    const found = lookupFlexible(normalizedWord, fromKey);
+    if (found && found.entry[toKey]) {
       foundAny = true;
-      // Preserve capitalization of first letter
-      const tr = entry[toKey];
+      if (found.foundIn !== fromKey) allMatchedDeclaredSource = false;
+      const tr = found.entry[toKey];
       if (w[0] === w[0].toUpperCase() && tr.length > 0) {
         return tr[0].toUpperCase() + tr.slice(1);
       }
@@ -90,7 +111,7 @@ export function offlineTranslate(text, fromAppLang, toAppLang) {
   if (foundAny) {
     return {
       translatedText: translatedWords.join(''),
-      confidence: 0.55,
+      confidence: allMatchedDeclaredSource ? 0.55 : 0.42,
       offline: true,
       source: 'dictionary-words',
       durationMs: 0

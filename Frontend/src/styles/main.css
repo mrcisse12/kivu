@@ -6224,6 +6224,167 @@ html[data-theme="dark"] .checkout-method.active { background: rgba(51, 149, 218,
 }
 
 /* ===========================================================
+   Tutoriel interactif premier lancement
+   =========================================================== */
+.kivu-tutorial-backdrop {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  pointer-events: auto;
+  z-index: 9990;
+  animation: kivu-tut-fadein 0.25s ease-out;
+}
+@keyframes kivu-tut-fadein {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.kivu-tutorial-svg {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.kivu-tut-ring {
+  filter: drop-shadow(0 0 12px rgba(255, 150, 0, 0.50));
+  animation: kivu-tut-pulse 2s ease-in-out infinite;
+}
+@keyframes kivu-tut-pulse {
+  0%, 100% { opacity: 1; stroke-width: 3; }
+  50%      { opacity: 0.6; stroke-width: 4; }
+}
+
+.kivu-tutorial-bubble {
+  position: absolute;
+  z-index: 9991;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg);
+  color: var(--text-primary);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+  border: 2px solid rgba(255, 150, 0, 0.40);
+  animation: kivu-tut-pop 0.30s cubic-bezier(.2,.8,.3,1.05);
+  overflow: hidden;
+}
+@keyframes kivu-tut-pop {
+  from { opacity: 0; transform: scale(0.92) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.kivu-tut-bubble-inner {
+  position: relative;
+  padding: 18px 18px 16px;
+}
+.kivu-tut-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.kivu-tut-progress__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--kivu-primary), var(--kivu-accent));
+  transition: width 0.3s ease;
+}
+.kivu-tut-icon {
+  font-size: 36px;
+  line-height: 1;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+.kivu-tut-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.1rem;
+  margin: 0 0 4px;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+.kivu-tut-body {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+.kivu-tut-counter {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  letter-spacing: 0.6px;
+  margin-bottom: 12px;
+}
+.kivu-tut-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.kivu-tut-actions-right {
+  display: flex;
+  gap: 6px;
+}
+.kivu-tut-btn {
+  border: 0;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: all 0.16s ease;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-family: inherit;
+}
+.kivu-tut-btn:hover { background: var(--divider); color: var(--text-primary); }
+.kivu-tut-btn--primary {
+  background: linear-gradient(135deg, var(--kivu-accent), #FFB859);
+  color: white;
+  box-shadow: 0 4px 12px rgba(255, 150, 0, 0.32);
+}
+.kivu-tut-btn--primary:hover {
+  background: linear-gradient(135deg, #E08600, var(--kivu-accent));
+  transform: translateY(-1px);
+  color: white;
+}
+.kivu-tut-btn--ghost {
+  background: transparent;
+  color: var(--text-tertiary);
+}
+.kivu-tut-btn--ghost:hover { background: var(--surface); }
+.kivu-tut-voice {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid var(--divider);
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.16s ease;
+  z-index: 1;
+}
+.kivu-tut-voice:hover { transform: scale(1.10); }
+.kivu-tut-voice.is-on { background: rgba(255,150,0,0.15); border-color: rgba(255,150,0,0.40); }
+
+body.kivu-tutorial-active {
+  overflow-y: auto !important;
+}
+
+@media (max-width: 480px) {
+  .kivu-tutorial-bubble { width: calc(100vw - 24px); }
+  .kivu-tut-actions { flex-direction: column-reverse; align-items: stretch; }
+  .kivu-tut-actions-right { justify-content: space-between; }
+}
+
+/* ===========================================================
    Daily goal ring (home)
    =========================================================== */
 .daily-goal {

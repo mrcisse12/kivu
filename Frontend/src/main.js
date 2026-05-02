@@ -31,6 +31,7 @@ import { setupMascotTracker } from './components/mascot-tracker.js';
 import { setupNotificationsBell } from './components/notifications-panel.js';
 import { seedWelcomeNotifications, notifications } from './services/notifications.js';
 import { ensureUserCode } from './services/friends.js';
+import { startTutorial } from './components/tutorial.js';
 import { initI18n, onLangChange } from './i18n/index.js';
 import { applyPalette, applyDensity, applyContrast } from './theme.js';
 import { sync } from './services/sync.js';
@@ -175,6 +176,20 @@ setupNotificationsBell();
 
 // Ensure the user has a stable KIVU code (KIVU-XXX-NNNN)
 ensureUserCode();
+
+// First-launch interactive tutorial — only on home, only if onboarding done
+function maybeStartTutorial() {
+  const path = router.current();
+  const onHome = path === '/' || path === '/home';
+  if (!onHome) return;
+  if (!store.get('onboardingCompleted')) return;
+  if (store.get('tutorialCompleted')) return;
+  // Defer 1s to let the home animations settle and the welcome notifications
+  // toast finish appearing
+  setTimeout(() => startTutorial(), 1000);
+}
+window.addEventListener('load', maybeStartTutorial);
+router.onChange(maybeStartTutorial);
 
 // ===========================================================
 // Cloud sync status indicator (top-right)

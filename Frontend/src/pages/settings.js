@@ -19,6 +19,8 @@ import { t, setLang, getLang, LANGS_AVAILABLE } from '../i18n/index.js';
 import { PALETTES, DENSITIES, applyPalette, applyDensity, applyContrast } from '../theme.js';
 import { sync } from '../services/sync.js';
 import { confirmModal } from '../services/dialog.js';
+import { resetTutorial, startTutorial } from '../components/tutorial.js';
+import { navigate } from '../router.js';
 
 function sections() {
   return [
@@ -363,6 +365,12 @@ function renderAccount() {
       <div class="text-xs text-muted mt-xs" style="text-align:center;">
         Vos progrès se synchronisent automatiquement entre vos appareils.
       </div>
+    </div>
+
+    <div class="card mb-md">
+      <button class="btn btn-ghost btn-full" data-action="replay-tutorial">
+        🎬 Rejouer le tour guidé
+      </button>
     </div>
 
     <div class="card mb-md">
@@ -738,6 +746,15 @@ renderSettings.mount = () => {
     input.addEventListener('change', () => {
       const u = store.get('user');
       store.set('user', { ...u, [input.dataset.field]: input.value });
+    })
+  );
+
+  document.querySelectorAll('[data-action="replay-tutorial"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      resetTutorial();
+      // Navigate home then start the tutorial after the page renders
+      navigate('/');
+      setTimeout(() => startTutorial({ force: true }), 700);
     })
   );
 
