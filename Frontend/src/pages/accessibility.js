@@ -128,6 +128,14 @@ renderAccessibility.mount = () => {
 
   document.querySelectorAll('[data-action="a11y-toggle"]').forEach(btn =>
     btn.addEventListener('click', () => {
+      // Guard against locked toggles — they're disabled in HTML but click
+      // can still fire on certain browsers/CSS configurations
+      if (btn.classList.contains('is-locked') || btn.disabled) {
+        if (window.__KIVU__?.toast) {
+          window.__KIVU__.toast('Cette fonction est toujours active 🔒', { type: 'info', duration: 1400 });
+        }
+        return;
+      }
       const key  = btn.dataset.key;
       const prefs = store.get('preferences') || {};
       const newVal = !prefs[key];

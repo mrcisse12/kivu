@@ -451,7 +451,18 @@ async function loopTick() {
     } else {
       await speech.speak(phrase[lang] || phrase.fr, lang, { rate: speedRate });
     }
-  } catch (e) { /* ignore */ }
+  } catch (e) {
+    // Speech failed (browser blocked, no voice, etc.) — show user feedback
+    console.warn('[KIVU Radio] speech error:', e);
+    isPlaying = false;
+    stopLoop();
+    if (window.__KIVU__?.toast) {
+      window.__KIVU__.toast('🔇 Lecture vocale impossible — touche play pour réessayer', { type: 'warning', duration: 2800 });
+    }
+    const main = document.querySelector('main.screen');
+    if (main) { main.innerHTML = renderRadio(); renderRadio.mount(); }
+    return;
+  }
 
   stopProgressBar();
   if (!isPlaying) return;
