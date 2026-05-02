@@ -5663,6 +5663,567 @@ html[data-theme="dark"] .checkout-method.active { background: rgba(51, 149, 218,
 }
 
 /* ===========================================================
+   Leaderboard mondial
+   =========================================================== */
+.lb-scope {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+.lb-scope .seg-tab {
+  text-align: center;
+  padding: 8px 14px;
+}
+
+.lb-period {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.lb-period-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition: all 0.16s ease;
+}
+.lb-period-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--kivu-accent);
+}
+.lb-period-btn.is-active {
+  background: linear-gradient(135deg, var(--kivu-accent), #FFB859);
+  color: white;
+  border-color: #E08600;
+  box-shadow: 0 4px 14px rgba(255, 150, 0, 0.30);
+  transform: translateY(-1px);
+}
+.lb-period-btn__emoji { font-size: 22px; line-height: 1; }
+
+/* Podium */
+.lb-podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 0 8px;
+}
+.lb-podium__col {
+  flex: 1;
+  max-width: 130px;
+  text-align: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.lb-podium__crown {
+  font-size: 28px;
+  margin-bottom: -6px;
+  filter: drop-shadow(0 2px 4px rgba(255, 215, 0, 0.50));
+  animation: lb-crown-bounce 2.4s ease-in-out infinite;
+  z-index: 2;
+}
+@keyframes lb-crown-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+.lb-podium__avatar {
+  width: 64px;
+  height: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  background: var(--bg);
+  border: 3px solid var(--divider);
+  border-radius: 999px;
+  margin-bottom: 6px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+}
+.lb-podium__col--gold .lb-podium__avatar   { border-color: #FFD700; box-shadow: 0 6px 20px rgba(255, 215, 0, 0.30); }
+.lb-podium__col--silver .lb-podium__avatar { border-color: #C0C0C0; }
+.lb-podium__col--bronze .lb-podium__avatar { border-color: #CD7F32; }
+.lb-podium__name {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+.lb-podium__xp {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--kivu-accent);
+  margin-bottom: 6px;
+}
+.lb-podium__step {
+  width: 100%;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 12px 4px;
+  font-weight: 800;
+  color: white;
+}
+.lb-podium__col--gold .lb-podium__step   { background: linear-gradient(180deg, #FFD700 0%, #E8B800 100%); height: 110px; }
+.lb-podium__col--silver .lb-podium__step { background: linear-gradient(180deg, #C0C0C0 0%, #A0A0A0 100%); height: 80px; }
+.lb-podium__col--bronze .lb-podium__step { background: linear-gradient(180deg, #CD7F32 0%, #A85D24 100%); height: 60px; }
+.lb-podium__rank { font-size: 22px; line-height: 1; margin-bottom: 2px; }
+.lb-podium__pos { font-size: 0.85rem; opacity: 0.95; }
+.lb-podium__col.is-me .lb-podium__name { color: var(--kivu-primary); }
+.lb-podium__col.is-me .lb-podium__avatar { box-shadow: 0 0 0 3px rgba(28, 176, 246, 0.4), 0 6px 20px rgba(28, 176, 246, 0.30); }
+
+/* Rows */
+.lb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  transition: transform 0.16s ease, border-color 0.16s ease;
+}
+.lb-row:hover {
+  transform: translateY(-1px);
+  border-color: var(--kivu-primary);
+}
+.lb-row.is-me {
+  background: linear-gradient(135deg, rgba(28, 176, 246, 0.12), rgba(255, 150, 0, 0.06));
+  border-color: var(--kivu-primary);
+  box-shadow: 0 4px 14px rgba(28, 176, 246, 0.15);
+}
+.lb-row__rank {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--text-tertiary);
+  min-width: 28px;
+  text-align: center;
+}
+.lb-row__rank.is-top {
+  color: var(--kivu-accent);
+}
+.lb-row__avatar {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: var(--bg);
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.lb-row__body { flex: 1; min-width: 0; overflow: hidden; }
+.lb-row__body .font-semibold {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lb-row__xp { text-align: right; flex-shrink: 0; }
+
+.lb-me-floating {
+  position: sticky;
+  bottom: 80px;
+  z-index: 20;
+  background: var(--bg);
+  padding: 10px 0;
+  margin: 0 -16px;
+  border-top: 1px solid var(--divider);
+  box-shadow: 0 -4px 14px rgba(0,0,0,0.08);
+}
+.lb-me-floating__inner { padding: 0 16px; }
+
+.lb-footer {
+  text-align: center;
+  padding: 12px 0 24px;
+}
+
+@media (max-width: 480px) {
+  .lb-podium__avatar { width: 52px; height: 52px; font-size: 30px; }
+  .lb-podium__col--gold .lb-podium__step   { height: 90px; }
+  .lb-podium__col--silver .lb-podium__step { height: 65px; }
+  .lb-podium__col--bronze .lb-podium__step { height: 50px; }
+  .lb-period-btn__label { font-size: 0.7rem; }
+}
+
+/* ===========================================================
+   Stories enhancements (stats + reco hero + new badges)
+   =========================================================== */
+.stories-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.stories-stat {
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-md, 10px);
+  padding: 10px 6px;
+  text-align: center;
+}
+.stories-stat--accent {
+  background: linear-gradient(135deg, rgba(255,150,0,0.10), rgba(242,149,45,0.05));
+  border-color: rgba(255,150,0,0.25);
+}
+.stories-stat__value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  line-height: 1;
+}
+.stories-stat--accent .stories-stat__value { color: var(--kivu-accent); }
+.stories-stat__label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+/* Reco hero */
+.stories-reco {
+  position: relative;
+  overflow: hidden;
+  background: var(--reco-grad, linear-gradient(135deg, #F2952D, #FFB859));
+  color: white;
+  border: 0;
+  padding: 0;
+  min-height: 200px;
+}
+.stories-reco__bg {
+  position: absolute;
+  top: -20px;
+  right: -10px;
+  font-size: 180px;
+  opacity: 0.25;
+  line-height: 1;
+  filter: blur(0.5px);
+  pointer-events: none;
+  user-select: none;
+}
+.stories-reco__inner {
+  position: relative;
+  z-index: 1;
+  padding: 18px 20px 20px;
+}
+.stories-reco__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.22);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  margin-bottom: 10px;
+  backdrop-filter: blur(4px);
+  letter-spacing: 0.4px;
+}
+
+/* Story card: recommended badge */
+.story-reco-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: linear-gradient(135deg, #FFB859, #F2952D);
+  color: white;
+  font-size: 14px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(242, 149, 45, 0.40);
+  animation: lb-crown-bounce 2.4s ease-in-out infinite;
+}
+
+@media (max-width: 480px) {
+  .stories-stats { gap: 6px; }
+  .stories-stat__value { font-size: 1rem; }
+  .stories-stat__label { font-size: 0.58rem; }
+  .stories-reco__bg { font-size: 130px; }
+}
+
+/* ===========================================================
+   Radio Kivi enhancements
+   =========================================================== */
+.radio-now {
+  position: relative;
+  border-radius: 20px;
+  padding: 18px 18px 22px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+}
+.radio-vinyl-wrap {
+  display: flex;
+  justify-content: center;
+}
+.radio-vinyl {
+  width: 130px;
+  height: 130px;
+  border-radius: 999px;
+  background: radial-gradient(circle at center, #2D3550 30%, #14202A 100%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border: 8px solid rgba(255,255,255,0.18);
+  box-shadow: 0 14px 26px rgba(0,0,0,0.32);
+  transition: transform 0.3s ease;
+}
+.radio-vinyl::before,
+.radio-vinyl::after { content: ''; position: absolute; inset: 0; border-radius: 999px; pointer-events: none; }
+.radio-vinyl::before {
+  border: 1px dashed rgba(255,255,255,0.18);
+  inset: 14px;
+}
+.radio-vinyl::after {
+  background: radial-gradient(circle at center, transparent 38%, rgba(255,255,255,0.12) 39%, transparent 41%, transparent 56%, rgba(255,255,255,0.10) 57%, transparent 59%);
+}
+.radio-vinyl.is-playing { animation: radio-vinyl-spin 6s linear infinite; }
+@keyframes radio-vinyl-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.radio-vinyl__cover {
+  width: 64px;
+  height: 64px;
+  background: white;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  z-index: 1;
+  box-shadow: inset 0 0 0 4px rgba(45, 53, 80, 0.10);
+}
+.radio-track {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.radio-track__playlist {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  opacity: 0.85;
+}
+.radio-track__main {
+  font-size: 1.6rem;
+  line-height: 1.15;
+  word-break: break-word;
+}
+.radio-track__sub {
+  font-size: 0.92rem;
+  opacity: 0.92;
+  font-style: italic;
+}
+.radio-track__sleep {
+  margin-top: 6px;
+  display: inline-flex;
+  align-self: center;
+  background: rgba(255,255,255,0.20);
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+}
+.radio-progress {
+  height: 4px;
+  background: rgba(255,255,255,0.22);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.radio-progress__fill {
+  height: 100%;
+  background: white;
+  border-radius: 999px;
+  transition: width 0.12s linear;
+  width: 0%;
+}
+
+.radio-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 18px;
+}
+.radio-ctrl {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--surface);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s var(--ease-spring);
+}
+.radio-ctrl:hover { transform: scale(1.10); background: var(--bg); color: var(--kivu-primary); }
+.radio-ctrl:active { transform: scale(0.94); }
+.radio-ctrl.is-on {
+  background: rgba(28, 176, 246, 0.15);
+  color: var(--kivu-primary);
+}
+.radio-ctrl--play {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, var(--kivu-accent), #FFB859);
+  color: white;
+  box-shadow: 0 6px 18px rgba(255, 150, 0, 0.40);
+}
+.radio-ctrl--play:hover { background: linear-gradient(135deg, #E08600, var(--kivu-accent)); transform: scale(1.06); }
+
+/* Playlist cards (grid) */
+.radio-playlists {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+.playlist-card {
+  background: var(--surface);
+  border: 2px solid var(--divider);
+  border-radius: 14px;
+  padding: 12px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  transition: all 0.18s var(--ease-spring);
+}
+.playlist-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--kivu-primary);
+  box-shadow: var(--shadow-sm);
+}
+.playlist-card.is-active {
+  border-color: var(--kivu-accent);
+  background: linear-gradient(135deg, rgba(255,150,0,0.10), rgba(242,149,45,0.04));
+  box-shadow: 0 6px 18px rgba(255, 150, 0, 0.20);
+}
+.playlist-card__cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--pl-grad, linear-gradient(135deg, #174E9C, #1CB0F6));
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.14);
+}
+.playlist-card__body { flex: 1; min-width: 0; }
+.playlist-card__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--kivu-accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+/* Podcast list */
+.radio-podcasts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.podcast-row {
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.18s var(--ease-spring);
+}
+.podcast-row:hover {
+  transform: translateY(-1px);
+  border-color: var(--kivu-tertiary);
+  box-shadow: var(--shadow-sm);
+}
+.podcast-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #8C40AD, #B86BD9);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(140, 64, 173, 0.30);
+}
+.podcast-body { flex: 1; min-width: 0; }
+.podcast-play {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #8C40AD, #B86BD9);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(140, 64, 173, 0.30);
+}
+
+@media (max-width: 480px) {
+  .radio-vinyl { width: 110px; height: 110px; }
+  .radio-vinyl__cover { width: 54px; height: 54px; font-size: 30px; }
+  .radio-track__main { font-size: 1.3rem; }
+  .radio-controls { padding: 10px 12px; }
+  .radio-ctrl { width: 40px; height: 40px; }
+  .radio-ctrl--play { width: 56px; height: 56px; }
+  .radio-playlists { grid-template-columns: 1fr; }
+}
+
+/* ===========================================================
    Daily goal ring (home)
    =========================================================== */
 .daily-goal {

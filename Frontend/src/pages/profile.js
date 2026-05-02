@@ -249,7 +249,7 @@ function renderLeaderboard(user) {
     <div class="card mb-md">
       <div class="section-head mb-sm">
         <div class="font-bold">Classement</div>
-        <button class="link-btn text-xs" data-nav="/">Voir tout</button>
+        <button class="link-btn text-xs" data-nav="/leaderboard">Classement complet &rsaquo;</button>
       </div>
       <div class="flex flex-col gap-xs">
         ${board.map(r => {
