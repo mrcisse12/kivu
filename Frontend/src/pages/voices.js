@@ -44,6 +44,7 @@ let filterLang = 'all';
 let query = '';
 let modalOpen = false;
 let unsubscribe = null;
+let initialDataLoaded = false; // prevents infinite mount recursion
 
 // Modal state
 let mForm = { lang: 'swa', text: '', locutor: '', region: '' };
@@ -324,18 +325,34 @@ renderVoices.mount = async () => {
     }
   };
 
-  // First load
-  if (entries.length === 0 && stats.total === 0) {
-    await refreshData();
-    main.innerHTML = renderVoices();
-    renderVoices.mount();
-    return;
+  // Refresh data in the background (fire-and-forget, no recursive mount)
+  // The first paint shows the empty state, then a single rerender
+  // happens when data is ready. This prevents the infinite mount loop.
+  refreshData().then(() => {
+    // Only rerender if user is still on the voices page (didn't navigate away)
+    if (document.querySelector('.voices-fab') || document.querySelector('.voices-stats')) {
+      const m = document.querySelector('main.screen');
+      if (m) {
+        m.innerHTML = renderVoices();
+        attachListeners();
+      }
+    }
+  }).catch(() => {});
+
+  attachListeners();
+
+  // Subscribe to library changes — only once
+  if (!unsubscribe) {
+    unsubscribe = voiceLibrary.subscribe(() => {
+      // Only rerender if we're still on the voices page
+      if (document.querySelector('.voices-fab') || document.querySelector('.voices-stats')) {
+        rerender();
+      }
+    });
   }
 
-  // Subscribe to library changes (other tabs / future)
-  if (!unsubscribe) {
-    unsubscribe = voiceLibrary.subscribe(() => rerender());
-  }
+  // Helper that attaches all interactive listeners to the current DOM
+  function attachListeners() {
 
   /* ── Search ── */
   const searchInput = document.getElementById('voices-search-input');
@@ -569,6 +586,7 @@ renderVoices.mount = async () => {
     };
     document.addEventListener('keydown', onEsc);
   }
+  } // end attachListeners
 };
 
 function cleanupModal() {

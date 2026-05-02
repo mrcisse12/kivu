@@ -8624,38 +8624,10 @@ textarea:focus-visible {
   transition-duration: 0.06s;
 }
 
-/* Page-content stagger: each direct child of `.screen.animate-slide-up`
-   fades in with a slight cascade for a premium "settling" feel */
-.screen.animate-slide-up > * {
-  animation: kivu-cascade 0.50s cubic-bezier(.2,.8,.3,1) both;
-}
-.screen.animate-slide-up > *:nth-child(1) { animation-delay: 0.02s; }
-.screen.animate-slide-up > *:nth-child(2) { animation-delay: 0.06s; }
-.screen.animate-slide-up > *:nth-child(3) { animation-delay: 0.10s; }
-.screen.animate-slide-up > *:nth-child(4) { animation-delay: 0.14s; }
-.screen.animate-slide-up > *:nth-child(5) { animation-delay: 0.18s; }
-.screen.animate-slide-up > *:nth-child(6) { animation-delay: 0.22s; }
-.screen.animate-slide-up > *:nth-child(7) { animation-delay: 0.26s; }
-.screen.animate-slide-up > *:nth-child(8) { animation-delay: 0.30s; }
-.screen.animate-slide-up > *:nth-child(n + 9) { animation-delay: 0.34s; }
-
-@keyframes kivu-cascade {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Disable cascade if user prefers reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .screen.animate-slide-up > * {
-    animation: none;
-  }
-}
+/* (cascade animation removed — caused unwanted re-blink on every
+   internal re-render, making search inputs / interactive content
+   feel jittery. The .screen already has its own animate-slide-up
+   keyframe at the page level, which is enough.) */
 
 /* Card hover lift refinement */
 .card {
@@ -8680,25 +8652,27 @@ textarea:focus-visible {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Number counter shimmer when counting up (lesson completion) */
+/* Number counter — gentle color pulse during animation (no transparent
+   text fill which would render unreadable on browsers without proper
+   background-clip:text support) */
 [data-count-target] {
-  background: linear-gradient(120deg,
-    var(--text-primary) 30%,
-    var(--kivu-accent) 50%,
-    var(--text-primary) 70%);
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: kivu-count-shimmer 1.4s ease-out;
+  transition: color 0.4s ease;
 }
-@keyframes kivu-count-shimmer {
-  0%   { background-position: 200% 0%; }
-  100% { background-position: -100% 0%; }
+.lesson-completion [data-count-target] {
+  animation: kivu-count-pulse 1.4s ease-out;
+}
+@keyframes kivu-count-pulse {
+  0%   { color: var(--text-primary); }
+  50%  { color: var(--kivu-accent); }
+  100% { color: var(--text-primary); }
+}
+.reward-card [data-count-target] {
+  color: var(--kivu-accent);
 }
 
-/* Subtle "alive" pulse on the notification bell when there are unreads */
-.notif-bell:has(.notif-bell__badge)::before {
+/* Subtle "alive" pulse on the notification bell when there are unreads.
+   Uses [data-count] attribute set by notifications-panel.js bell refresh. */
+.notif-bell[data-count]:not([data-count="0"])::before {
   content: '';
   position: absolute;
   inset: -3px;
