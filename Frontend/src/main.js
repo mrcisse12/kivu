@@ -24,6 +24,7 @@ import { renderCheckout } from './pages/checkout.js';
 import { renderStories } from './pages/stories.js';
 import { renderStoryPlayer } from './pages/story-player.js';
 import { renderFriends } from './pages/friends.js';
+import { renderVoices } from './pages/voices.js';
 import { setupInstallBanner } from './components/install-banner.js';
 import { setupMascotTracker } from './components/mascot-tracker.js';
 import { setupNotificationsBell } from './components/notifications-panel.js';
@@ -53,6 +54,7 @@ const routes = {
   '/stories': renderStories,
   '/dictionary': renderDictionary,
   '/friends': renderFriends,
+  '/voices': renderVoices,
   '/login': renderLogin,
   '/onboarding': renderOnboarding
 };

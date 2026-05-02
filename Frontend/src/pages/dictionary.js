@@ -13,7 +13,28 @@ import { icons } from '../components/icons.js';
 import { speech } from '../services/speech.js';
 import { fx } from '../services/audio-fx.js';
 import { confirmModal } from '../services/dialog.js';
+import { voiceLibrary } from '../services/voice-library.js';
+import { navigate } from '../router.js';
 import { store } from '../store.js';
+
+// Cache of "has-human-voice" lookups so we don't hit IndexedDB each render
+const humanVoiceCache = new Map(); // key: "lang:text" → boolean
+function isHuman(lang, text) {
+  const k = (lang || '') + ':' + (text || '').toLowerCase();
+  return humanVoiceCache.get(k) === true;
+}
+async function refreshHumanVoiceCache(entry) {
+  if (!entry) return;
+  const langs = ['swa', 'wol', 'bam', 'hau', 'yor', 'zul', 'ibo', 'lin'];
+  for (const lang of langs) {
+    const text = entry[lang];
+    if (!text) continue;
+    const k = lang + ':' + text.toLowerCase();
+    if (humanVoiceCache.has(k)) continue;
+    const has = await voiceLibrary.has(lang, text).catch(() => false);
+    humanVoiceCache.set(k, has);
+  }
+}
 
 const LANG_ORDER = ['swa', 'wol', 'bam', 'hau', 'yor', 'zul', 'ibo', 'en'];
 const LANG_FLAGS = {
@@ -349,20 +370,27 @@ function renderDetailModal() {
         <div class="dict-section">
           <div class="dict-section__title">Traductions</div>
           <div class="dict-translations">
-            ${LANG_ORDER.filter(l => e[l]).map(l => `
+            ${LANG_ORDER.filter(l => e[l]).map(l => {
+              const hasHuman = isHuman(l, e[l]);
+              return `
               <div class="dict-trans-row">
                 <span class="dict-trans-flag">${LANG_FLAGS[l]}</span>
                 <div class="dict-trans-body">
                   <div class="text-xs text-muted">${LANG_NAMES[l]}</div>
                   <div class="font-bold">${escapeHtml(e[l])}</div>
                 </div>
+                ${hasHuman ? '<span class="human-voice-pill" title="Voix humaine réelle disponible">🎙️ humaine</span>' : ''}
                 <button class="icon-btn icon-btn--sm" data-action="dict-speak"
                         data-text="${escapeAttr(e[l])}" data-lang="${LANG_TTS[l]}"
                         aria-label="Écouter ${LANG_NAMES[l]}">
                   ${icons.speaker(18)}
                 </button>
               </div>
-            `).join('')}
+            `;
+            }).join('')}
+          </div>
+          <div class="text-xs text-muted mt-sm" style="text-align:center;">
+            🎙️ <button class="link-btn" data-action="dict-record" style="font-weight:700;">Enregistrer une voix humaine</button>
           </div>
         </div>
 
@@ -504,17 +532,27 @@ renderDictionary.mount = () => {
 
   // ── Open detail ───────────────────────────────────────
   document.querySelectorAll('[data-action="dict-detail"]').forEach(btn =>
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const id = btn.dataset.id;
       detail = getEntry(id);
       if (detail) {
         pushRecent(id);
+        // Refresh "human voice" cache for this entry's translations
+        await refreshHumanVoiceCache(detail);
         rerender();
         // Auto-speak French (slowly)
         if (speech.ttsSupported) {
           setTimeout(() => speech.speak(detail.fr, 'fra', { rate: 0.95 }), 200);
         }
       }
+    })
+  );
+
+  // ── Record voice button (jumps to /voices admin page) ──
+  document.querySelectorAll('[data-action="dict-record"]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      detail = null;
+      navigate('/voices');
     })
   );
 

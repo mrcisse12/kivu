@@ -184,13 +184,44 @@ export const speech = {
   },
 
   /**
-   * Synthétise et joue le texte avec la meilleure voix humaine disponible.
+   * Joue le texte. Priorité :
+   *   1) Enregistrement humain réel dans la voix-library (si disponible)
+   *   2) Sinon, synthèse vocale TTS avec la meilleure voix dispo
+   *
    * @param {string} text
    * @param {string} kivuLang
    * @param {object} opts { rate, pitch, volume, preferredVoiceURI? }
+   * @returns {Promise<{ source: 'human'|'tts'|'none' }>}
    */
-  speak(text, kivuLang, { rate = 1.0, pitch = 1.0, volume = 1.0, preferredVoiceURI = null } = {}) {
-    if (!this.ttsSupported || !text) return Promise.resolve();
+  async speak(text, kivuLang, { rate = 1.0, pitch = 1.0, volume = 1.0, preferredVoiceURI = null } = {}) {
+    if (!text) return { source: 'none' };
+
+    // 1. Try the human-recorded voice library first
+    try {
+      const { voiceLibrary } = await import('./voice-library.js');
+      const blob = await voiceLibrary.get(kivuLang, text);
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.volume = volume;
+        audio.playbackRate = Math.max(0.5, Math.min(2, rate));
+        // Cancel any TTS in progress so we don't play both
+        if (this.ttsSupported) window.speechSynthesis.cancel();
+        // Stop any previous human-voice playback
+        if (currentAudio) { try { currentAudio.pause(); } catch {} }
+        currentAudio = audio;
+        await new Promise(resolve => {
+          audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+          audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+          audio.play().catch(() => { URL.revokeObjectURL(url); resolve(); });
+        });
+        currentAudio = null;
+        return { source: 'human' };
+      }
+    } catch { /* fall back to TTS */ }
+
+    // 2. Fallback: SpeechSynthesis API (TTS)
+    if (!this.ttsSupported) return { source: 'none' };
     window.speechSynthesis.cancel();
 
     const u = new SpeechSynthesisUtterance(text);
@@ -209,16 +240,43 @@ export const speech = {
     if (chosen) u.voice = chosen;
 
     window.speechSynthesis.speak(u);
-    return new Promise(resolve => {
+    await new Promise(resolve => {
       u.onend = resolve;
       u.onerror = resolve;
+    });
+    return { source: 'tts' };
+  },
+
+  /** Same as speak() but never tries the human library — pure TTS. */
+  speakTTS(text, kivuLang, opts = {}) {
+    if (!this.ttsSupported || !text) return Promise.resolve({ source: 'none' });
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const bcp = toBcp47(kivuLang);
+    u.lang = bcp;
+    u.rate = opts.rate ?? 1.0;
+    u.pitch = opts.pitch ?? 1.0;
+    u.volume = opts.volume ?? 1.0;
+    let chosen = null;
+    if (opts.preferredVoiceURI) {
+      chosen = getAllVoices().find(v => v.voiceURI === opts.preferredVoiceURI) || null;
+    }
+    if (!chosen) chosen = pickBestVoice(bcp);
+    if (chosen) u.voice = chosen;
+    window.speechSynthesis.speak(u);
+    return new Promise(resolve => {
+      u.onend = () => resolve({ source: 'tts' });
+      u.onerror = () => resolve({ source: 'tts' });
     });
   },
 
   cancelSpeech() {
     if (this.ttsSupported) window.speechSynthesis.cancel();
+    if (currentAudio) { try { currentAudio.pause(); currentAudio = null; } catch {} }
   }
 };
+
+let currentAudio = null;
 
 /** Pre-warm the voices cache as soon as possible (Chrome async-loads) */
 if (typeof window !== 'undefined' && 'speechSynthesis' in window) {

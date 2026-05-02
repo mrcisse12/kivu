@@ -14,6 +14,7 @@ function navItems() {
     { path: '/stories',       icon: icons.book,          label: t('nav.stories') },
     { path: '/dictionary',    icon: icons.search,        label: 'Dictionnaire' },
     { path: '/friends',       icon: icons.users,         label: 'Amis' },
+    { path: '/voices',        icon: icons.mic,           label: 'Voix admin' },
     { path: '/diaspora',      icon: icons.diaspora,      label: t('nav.diaspora') },
     { path: '/accessibility', icon: icons.accessibility, label: t('nav.accessibility') },
     { path: '/radio',         icon: icons.speaker,       label: t('nav.radio') },
