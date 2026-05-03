@@ -15,6 +15,7 @@ function navItems() {
     { path: '/dictionary',    icon: icons.search,        label: 'Dictionnaire' },
     { path: '/friends',       icon: icons.users,         label: 'Amis' },
     { path: '/leaderboard',   icon: icons.trophy,        label: 'Classement' },
+    { path: '/stats',         icon: icons.signal,        label: 'Statistiques' },
     { path: '/voices',        icon: icons.mic,           label: 'Voix admin' },
     { path: '/diaspora',      icon: icons.diaspora,      label: t('nav.diaspora') },
     { path: '/accessibility', icon: icons.accessibility, label: t('nav.accessibility') },
