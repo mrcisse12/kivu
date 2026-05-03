@@ -149,11 +149,17 @@ function refreshBell() {
 
 function syncBellVisibility() {
   if (!bellEl) return;
-  // Hide during onboarding/login — check current URL hash
+  // Hide during onboarding/login + on pages with their own top-right action
+  // (marketplace has cart icon, voices has FAB recording widget)
   const hash = (location.hash || '').replace('#', '');
   const fullScreenRoutes = ['/onboarding', '/login'];
+  const ownTopRightRoutes = ['/marketplace', '/checkout'];
   const inLessonOrStory = hash.startsWith('/lesson/') || hash.startsWith('/story/');
-  const hidden = fullScreenRoutes.includes(hash) || inLessonOrStory;
+  const inCheckout = hash.startsWith('/checkout/');
+  const hidden = fullScreenRoutes.includes(hash) ||
+                 ownTopRightRoutes.includes(hash) ||
+                 inLessonOrStory ||
+                 inCheckout;
   bellEl.style.display = hidden ? 'none' : 'inline-flex';
   if (panelOpen && hidden) closePanel();
 }

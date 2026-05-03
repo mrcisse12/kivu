@@ -23,6 +23,7 @@ import { fx } from '../services/audio-fx.js';
 import { confirmModal } from '../services/dialog.js';
 import { voiceLibrary } from '../services/voice-library.js';
 import { voiceRecorder } from '../services/voice-recorder.js';
+import { onLeavePage } from '../services/page-lifecycle.js';
 
 const LANGS = [
   { id: 'swa', name: 'Swahili',  flag: '🇹🇿' },
@@ -45,6 +46,7 @@ let query = '';
 let modalOpen = false;
 let unsubscribe = null;
 let initialDataLoaded = false; // prevents infinite mount recursion
+let lifecycleRegistered = false;
 
 // Modal state
 let mForm = { lang: 'swa', text: '', locutor: '', region: '' };
@@ -307,6 +309,20 @@ function renderModal() {
 renderVoices.mount = async () => {
   const main = document.querySelector('main.screen');
   if (!main) return;
+
+  if (!lifecycleRegistered) {
+    lifecycleRegistered = true;
+    onLeavePage('/voices', () => {
+      cleanupModal();
+      modalOpen = false;
+      query = '';
+      filterLang = 'all';
+      if (unsubscribe) {
+        try { unsubscribe(); } catch {}
+        unsubscribe = null;
+      }
+    });
+  }
 
   const rerender = async (preserveFocus = false) => {
     const focusedId = preserveFocus ? document.activeElement?.id : null;

@@ -14,6 +14,7 @@ import { store } from '../store.js';
 import { icons } from '../components/icons.js';
 import { fx } from '../services/audio-fx.js';
 import { confirmModal } from '../services/dialog.js';
+import { onLeavePage } from '../services/page-lifecycle.js';
 import {
   ensureUserCode,
   getFriends,
@@ -44,6 +45,8 @@ let addCodeInput = '';
 let addError = null;
 let detailFriendId = null;     // friend currently in detail view
 let encModalFriendId = null;   // friend currently being encouraged
+let lifecycleRegistered = false;
+let storeUnsubscribe = null;
 
 /* ─── Helpers ─────────────────────────────────────────── */
 
@@ -432,6 +435,38 @@ function renderEncouragementModal() {
 renderFriends.mount = () => {
   const main = document.querySelector('main.screen');
   if (!main) return;
+
+  if (!lifecycleRegistered) {
+    lifecycleRegistered = true;
+    onLeavePage('/friends', () => {
+      activeTab = 'list';
+      addModalOpen = false;
+      addCodeInput = '';
+      addError = null;
+      detailFriendId = null;
+      encModalFriendId = null;
+      if (storeUnsubscribe) {
+        try { storeUnsubscribe(); } catch {}
+        storeUnsubscribe = null;
+      }
+    });
+  }
+
+  // Live-update tab counts when friends/activity changes (encourage reciprocation,
+  // adding friends from anywhere, etc.)
+  if (!storeUnsubscribe) {
+    storeUnsubscribe = store.subscribe(() => {
+      // Only rerender if user is still on /friends
+      if (document.querySelector('.friends-tabs')) {
+        const m = document.querySelector('main.screen');
+        if (m && !addModalOpen && !detailFriendId && !encModalFriendId) {
+          // Light rerender (don't disrupt modals)
+          m.innerHTML = renderFriends();
+          renderFriends.mount();
+        }
+      }
+    });
+  }
 
   const rerender = (preserveFocus = false) => {
     const focusedId = preserveFocus ? document.activeElement?.id : null;

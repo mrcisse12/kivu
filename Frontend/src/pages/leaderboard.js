@@ -19,6 +19,7 @@ import { icons } from '../components/icons.js';
 import { fx } from '../services/audio-fx.js';
 import { store } from '../store.js';
 import { getFriends } from '../services/friends.js';
+import { onLeavePage } from '../services/page-lifecycle.js';
 
 const PERIODS = [
   { id: 'day',     label: 'Jour',      emoji: '☀️' },
@@ -68,6 +69,7 @@ const WORLD_POOL = [
 
 let activePeriod = 'week';
 let activeScope = 'world';
+let lifecycleRegistered = false;
 
 /* ─── Helpers ──────────────────────────────────────────── */
 
@@ -295,6 +297,14 @@ function renderRow(e) {
 renderLeaderboard.mount = () => {
   const main = document.querySelector('main.screen');
   if (!main) return;
+
+  if (!lifecycleRegistered) {
+    lifecycleRegistered = true;
+    onLeavePage('/leaderboard', () => {
+      activePeriod = 'week';
+      activeScope = 'world';
+    });
+  }
 
   const rerender = () => {
     main.innerHTML = renderLeaderboard();

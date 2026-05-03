@@ -15,6 +15,7 @@ import { icons } from '../components/icons.js';
 import { mascot } from '../components/mascot.js';
 import { fx } from '../services/audio-fx.js';
 import { STORIES } from '../data/stories.js';
+import { onLeavePage } from '../services/page-lifecycle.js';
 import { t } from '../i18n/index.js';
 
 const LANG_NAMES = {
@@ -29,6 +30,7 @@ const LANG_FLAGS = {
 let activeCategory = 'all';
 let activeLang = 'all';
 let query = '';
+let lifecycleRegistered = false;
 
 function escapeHtml(s) {
   if (s == null) return '';
@@ -255,6 +257,15 @@ function renderStoryCard(s, isDone, isRecommended) {
 renderStories.mount = () => {
   const main = document.querySelector('main.screen');
   if (!main) return;
+
+  if (!lifecycleRegistered) {
+    lifecycleRegistered = true;
+    onLeavePage('/stories', () => {
+      activeCategory = 'all';
+      activeLang = 'all';
+      query = '';
+    });
+  }
 
   const rerender = (preserveFocus = false) => {
     const focusedId = preserveFocus ? document.activeElement?.id : null;

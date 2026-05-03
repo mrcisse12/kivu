@@ -22,11 +22,13 @@ import { icons } from '../components/icons.js';
 import { fx } from '../services/audio-fx.js';
 import { confirmModal } from '../services/dialog.js';
 import { CATEGORIES, PRODUCTS, getProduct, searchProducts, relatedProducts, countByCategory, LANG_LABELS } from '../data/marketplace.js';
+import { onLeavePage } from '../services/page-lifecycle.js';
 
 let activeCategory = 'all';
 let query = '';
 let detailId = null;
 let cartOpen = false;
+let lifecycleRegistered = false;
 
 /* ─── Helpers ──────────────────────────────────────────── */
 
@@ -358,6 +360,16 @@ function renderCartModal() {
 renderMarketplace.mount = () => {
   const main = document.querySelector('main.screen');
   if (!main) return;
+
+  if (!lifecycleRegistered) {
+    lifecycleRegistered = true;
+    onLeavePage('/marketplace', () => {
+      activeCategory = 'all';
+      query = '';
+      detailId = null;
+      cartOpen = false;
+    });
+  }
 
   const rerender = (preserveFocus = false) => {
     const focusedId = preserveFocus ? document.activeElement?.id : null;

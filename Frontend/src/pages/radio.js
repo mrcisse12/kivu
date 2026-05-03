@@ -13,6 +13,7 @@
  */
 
 import { store } from '../store.js';
+import { onLeavePage } from '../services/page-lifecycle.js';
 import { icons } from '../components/icons.js';
 import { mascot } from '../components/mascot.js';
 import { speech } from '../services/speech.js';
@@ -64,6 +65,7 @@ let sleepEndAt = 0;
 let phraseProgress = 0;        // 0–100
 let phraseProgressTimer = null;
 let loopId = null;
+let lifecycleRegistered = false;
 
 const PLAYLISTS = buildPlaylists();
 
@@ -264,6 +266,20 @@ function sleepIcon()   { return `<svg width="20" height="20" viewBox="0 0 24 24"
 renderRadio.mount = () => {
   const main = document.querySelector('main.screen');
   if (!main) return;
+
+  // Register cleanup once: stop playback + reset state when leaving /radio
+  if (!lifecycleRegistered) {
+    lifecycleRegistered = true;
+    onLeavePage('/radio', () => {
+      isPlaying = false;
+      stopLoop();           // cancels TTS + clears timers
+      sleepEndAt = 0;
+      sleepMinutes = 0;
+      phraseProgress = 0;
+      currentPhraseIdx = 0;
+      shuffle = false;
+    });
+  }
 
   const rerender = () => {
     main.innerHTML = renderRadio();

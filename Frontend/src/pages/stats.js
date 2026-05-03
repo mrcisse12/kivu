@@ -12,6 +12,7 @@ import Chart from 'chart.js/auto';
 import { store } from '../store.js';
 import { icons } from '../components/icons.js';
 import { fx } from '../services/audio-fx.js';
+import { onLeavePage } from '../services/page-lifecycle.js';
 
 const PERIODS = [
   { id: '7d',  label: '7 jours',  days: 7   },
@@ -22,6 +23,7 @@ const PERIODS = [
 let activeTab = 'overview';
 let activePeriod = '7d';
 let charts = []; // Chart.js instances to destroy on rerender
+let lifecycleRegistered = false;
 
 const ALL_BADGES = [
   { id: 'first_lesson',   icon: '🎓', label: 'Premier pas',    desc: 'Complétez votre 1ère leçon',         cond: s => (s.lessons?.completed?.length || 0) >= 1 },
@@ -440,7 +442,18 @@ renderStats.mount = () => {
   const main = document.querySelector('main.screen');
   if (!main) return;
 
+  // Always destroy any existing Chart instances (memory leak fix)
   destroyCharts();
+
+  // Register cleanup once: when user leaves /stats, reset state + destroy charts
+  if (!lifecycleRegistered) {
+    lifecycleRegistered = true;
+    onLeavePage('/stats', () => {
+      destroyCharts();
+      activeTab = 'overview';
+      activePeriod = '7d';
+    });
+  }
 
   const rerender = () => {
     destroyCharts();
