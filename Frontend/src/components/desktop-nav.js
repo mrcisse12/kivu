@@ -9,6 +9,7 @@ function navItems() {
     { path: '/learn',         icon: icons.learn,         label: t('nav.learn') },
     { path: '/preserve',      icon: icons.preserve,      label: t('nav.preserve') },
     { path: '/business',      icon: icons.business,      label: t('nav.business') },
+    { path: '/marketplace',   icon: icons.archive,       label: 'Marketplace' },
     { path: '/multi-party',   icon: icons.multiparty,    label: t('nav.multiparty') },
     { path: '/assistant',     icon: icons.assistant,     label: t('nav.assistant') },
     { path: '/stories',       icon: icons.book,          label: t('nav.stories') },

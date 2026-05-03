@@ -27,6 +27,7 @@ import { renderFriends } from './pages/friends.js';
 import { renderVoices } from './pages/voices.js';
 import { renderLeaderboard } from './pages/leaderboard.js';
 import { renderStats } from './pages/stats.js';
+import { renderMarketplace } from './pages/marketplace.js';
 import { setupInstallBanner } from './components/install-banner.js';
 import { setupMascotTracker } from './components/mascot-tracker.js';
 import { setupNotificationsBell } from './components/notifications-panel.js';
@@ -60,6 +61,7 @@ const routes = {
   '/voices': renderVoices,
   '/leaderboard': renderLeaderboard,
   '/stats': renderStats,
+  '/marketplace': renderMarketplace,
   '/login': renderLogin,
   '/onboarding': renderOnboarding
 };

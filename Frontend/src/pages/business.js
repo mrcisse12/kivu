@@ -51,6 +51,19 @@ export function renderBusiness() {
       </div>
     </div>
 
+    <!-- Marketplace CTA -->
+    <button class="card mb-md mp-cta-card" data-nav="/marketplace" style="position:relative; overflow:hidden; cursor:pointer; border:0;">
+      <div style="position:absolute; inset:0; background:linear-gradient(135deg, #F2952D 0%, #FFB859 50%, #2D9E73 110%); opacity:0.95;"></div>
+      <div style="position:relative; z-index:1; display:flex; align-items:center; gap:14px; text-align:left; color:white;">
+        <div style="font-size:48px; line-height:1; flex-shrink:0;">🛒</div>
+        <div style="flex:1;">
+          <div class="font-display font-bold text-lg" style="color:white;">Marketplace KIVU</div>
+          <div class="text-sm" style="opacity:0.95;">24 produits africains · 12 pays · auto-traduits</div>
+          <div class="text-xs mt-xs" style="opacity:0.9; font-weight:700;">Découvrir &rsaquo;</div>
+        </div>
+      </div>
+    </button>
+
     <!-- EOQ live demo -->
     <div class="card mb-md eoq-card">
       <div class="section-head mb-sm">
