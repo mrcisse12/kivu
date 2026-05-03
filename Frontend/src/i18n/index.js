@@ -1,29 +1,47 @@
 /**
- * KIVU — i18n minimaliste, 3 langues : Français / English / Wolof.
+ * KIVU — i18n minimaliste, 5 langues mondiales :
+ *   Français · English · Kiswahili · العربية (RTL) · Wolof
  *
  * Pas de dépendance externe. La fonction t(key) renvoie la traduction
  * dans la langue active (préférence utilisateur). Format : dot-paths.
  *
- * Wolof = symbole fort. Choisir le wolof comme langue d'interface
- * pour une app de langues africaines = la preuve qu'on en parle pas
- * QUE des langues africaines, on les utilise vraiment.
+ * Le Wolof est conservé comme symbole fort de la mission KIVU :
+ * une app de langues africaines qui les utilise VRAIMENT comme UI.
+ *
+ * L'arabe active automatiquement le mode RTL (sens droite-à-gauche)
+ * sur le document HTML.
  */
 
 import { fr } from './fr.js';
 import { en } from './en.js';
+import { sw } from './sw.js';
+import { ar } from './ar.js';
 import { wo } from './wo.js';
 
-const DICTIONARIES = { fr, en, wo };
+const DICTIONARIES = { fr, en, sw, ar, wo };
+
+// Langues à sens droite-à-gauche
+const RTL_LANGS = new Set(['ar']);
 
 let currentLang = 'fr';
 
 const listeners = new Set();
+
+/** Applique l'attribut dir="rtl|ltr" + classe sur <html> */
+function applyDir(lang) {
+  const isRtl = RTL_LANGS.has(lang);
+  document.documentElement.setAttribute('dir', isRtl ? 'rtl' : 'ltr');
+  document.documentElement.classList.toggle('is-rtl', isRtl);
+}
 
 /** Initialise depuis localStorage avant le premier rendu. */
 export function initI18n(lang) {
   if (lang && DICTIONARIES[lang]) {
     currentLang = lang;
     document.documentElement.lang = lang;
+    applyDir(lang);
+  } else {
+    applyDir(currentLang);
   }
 }
 
@@ -32,6 +50,7 @@ export function setLang(lang) {
   if (!DICTIONARIES[lang]) return;
   currentLang = lang;
   document.documentElement.lang = lang;
+  applyDir(lang);
   listeners.forEach(cb => cb(lang));
 }
 
@@ -72,7 +91,9 @@ export function t(key, vars = {}) {
 }
 
 export const LANGS_AVAILABLE = [
-  { id: 'fr', name: 'Français', native: 'Français', flag: '🇫🇷' },
-  { id: 'en', name: 'English',  native: 'English',  flag: '🇬🇧' },
-  { id: 'wo', name: 'Wolof',    native: 'Wolof',    flag: '🇸🇳' }
+  { id: 'fr', name: 'Français',  native: 'Français',  flag: '🇫🇷' },
+  { id: 'en', name: 'English',   native: 'English',   flag: '🇬🇧' },
+  { id: 'sw', name: 'Swahili',   native: 'Kiswahili', flag: '🇹🇿' },
+  { id: 'ar', name: 'العربية',   native: 'العربية',   flag: '🇸🇦' },
+  { id: 'wo', name: 'Wolof',     native: 'Wolof',     flag: '🇸🇳' }
 ];

@@ -9024,4 +9024,111 @@ textarea:focus-visible {
   .stats-tab__label { font-size: 0.65rem; }
   .heatmap__cell { width: 12px; height: 12px; }
 }
+
+/* ===========================================================
+   RTL support — Arabic UI
+   =========================================================== */
+html[dir="rtl"] {
+  direction: rtl;
+}
+
+/* Inverse les marges/paddings asymétriques pour RTL */
+html[dir="rtl"] .desktop-nav {
+  right: auto;
+  left: 0;
+  border-right: 0;
+  border-left: 1px solid var(--divider);
+}
+
+html[dir="rtl"] .notif-bell {
+  right: auto;
+  left: 16px;
+}
+html[dir="rtl"] .notif-bell__badge {
+  right: auto;
+  left: -2px;
+}
+html[dir="rtl"] .notif-panel-wrap {
+  right: auto;
+  left: 14px;
+}
+
+html[dir="rtl"] .sync-indicator {
+  right: auto;
+  left: 14px;
+}
+
+/* Sidebar nav side flips */
+@media (min-width: 901px) {
+  html[dir="rtl"] body { padding-right: 0; padding-left: 240px; }
+  html[dir="rtl"] .desktop-nav-footer { left: 0; right: auto; }
+}
+
+/* Bottom nav reverses item order */
+html[dir="rtl"] .bottom-nav {
+  flex-direction: row-reverse;
+}
+
+/* Toast container — flip side */
+html[dir="rtl"] .toast-container {
+  right: auto;
+  left: 16px;
+}
+
+/* Floating buttons (FAB) flip side */
+html[dir="rtl"] .voices-fab {
+  right: auto;
+  left: 16px;
+}
+
+/* Chat input flips */
+html[dir="rtl"] .chat-input {
+  flex-direction: row-reverse;
+}
+html[dir="rtl"] .bubble-row--user { justify-content: flex-start; }
+html[dir="rtl"] .bubble-row--ai   { justify-content: flex-end; }
+
+/* Arrow icons mirror */
+html[dir="rtl"] [class*="arrow-right"] svg,
+html[dir="rtl"] svg[aria-label*="next"],
+html[dir="rtl"] .icon-flip-rtl svg {
+  transform: scaleX(-1);
+}
+
+/* Numeric values stay LTR (XP counts, percentages, dates) */
+html[dir="rtl"] .stat-value,
+html[dir="rtl"] .kpi-card__value,
+html[dir="rtl"] .stats-hero__bar,
+html[dir="rtl"] .progress-fill,
+html[dir="rtl"] code,
+html[dir="rtl"] .friends-code-card__code,
+html[dir="rtl"] .profile-code-chip {
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+/* Modal sheets stay centered (no flip needed) */
+
+/* Drawer side flips */
+html[dir="rtl"] .ai-drawer {
+  left: auto;
+  right: 14px;
+}
+
+/* Fix radio play button left position if any */
+html[dir="rtl"] .voice-card__play,
+html[dir="rtl"] .voices-search__icon {
+  /* keep visual order natural */
+}
+
+/* Arabic tends to be slightly larger; bump font-size 5% */
+html[dir="rtl"] body {
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+html[dir="rtl"] .font-display,
+html[dir="rtl"] .screen-title,
+html[dir="rtl"] .onb-title,
+html[dir="rtl"] .onb-question {
+  font-family: 'Tajawal', 'Cairo', 'Helvetica Neue', sans-serif;
+}
 .event-row__body { flex: 1; min-width: 0; }
