@@ -42,6 +42,27 @@ const LEADERBOARD_PEERS = [
   { rank: 4,  name: 'Sékou T.',  flag: '🇬🇳', xp: 11500, avatar: '👨🏾' },
 ];
 
+/** Format the time until next heart regeneration */
+function heartsLabel(lessonsState) {
+  const hearts = lessonsState.hearts ?? 5;
+  if (hearts >= 5) return 'Vies';
+  const regenAt = lessonsState.heartsRegenAt;
+  if (!regenAt) return 'Vies';
+  const ms = new Date(regenAt).getTime() - Date.now();
+  if (ms <= 0) return '+1 bientôt';
+  const min = Math.ceil(ms / 60000);
+  if (min < 60) return `+1 dans ${min} min`;
+  const h = Math.floor(min / 60);
+  return `+1 dans ${h}h${min % 60 > 0 ? (min % 60) + 'min' : ''}`;
+}
+
+function heartsTooltip(lessonsState) {
+  const hearts = lessonsState.hearts ?? 5;
+  if (hearts >= 5) return 'Vies pleines — tu peux faire toutes les leçons';
+  if (hearts === 0) return 'Plus de vies — attends la régénération ou abonne-toi Pro';
+  return `${hearts} vie${hearts > 1 ? 's' : ''} restante${hearts > 1 ? 's' : ''} — régénération automatique toutes les 4h`;
+}
+
 function buildLeaderboard() {
   const user = store.get('user') || {};
   const myXP = user.stats?.xp || 0;
@@ -152,7 +173,10 @@ function renderPathTab() {
         </div>
         <div class="flex gap-md path-stats">
           <div><span class="font-bold">${(lessonsState.completed || []).length}</span><span class="text-xs text-muted"> / 30</span><div class="text-xs text-muted">Leçons</div></div>
-          <div><span class="font-bold">❤ ${lessonsState.hearts ?? 5}</span><div class="text-xs text-muted">Vies</div></div>
+          <div title="${heartsTooltip(lessonsState)}">
+            <span class="font-bold">❤ ${lessonsState.hearts ?? 5}</span>
+            <div class="text-xs text-muted">${heartsLabel(lessonsState)}</div>
+          </div>
           <div><span class="font-bold">🔥 ${(store.get('user').stats.streak)}</span><div class="text-xs text-muted">Série</div></div>
         </div>
       </div>
@@ -598,13 +622,25 @@ renderLearn.mount = () => {
   );
 
   document.querySelectorAll('[data-action="path-set-lang"]').forEach(btn =>
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const lang = btn.dataset.lang;
       const lessonsState = store.get('lessons') || {};
-      // Reset progression when switching language so the user starts fresh
+      // If user has progress, ask before wiping it
+      const completedCount = (lessonsState.completed || []).length;
+      if (completedCount > 0 && lessonsState.targetLang !== lang) {
+        const { confirmModal } = await import('../services/dialog.js');
+        const ok = await confirmModal({
+          icon: '🌍',
+          title: `Changer pour ${LANG_LABELS[lang].name} ?`,
+          message: `Tu as ${completedCount} leçon${completedCount > 1 ? 's' : ''} complétée${completedCount > 1 ? 's' : ''} en ${LANG_LABELS[lessonsState.targetLang]?.name || 'la langue actuelle'}. Tu pourras toujours revenir, mais le parcours redémarrera à zéro pour ${LANG_LABELS[lang].name}.`,
+          confirmLabel: 'Changer de langue',
+          cancelLabel: 'Annuler'
+        });
+        if (!ok) return;
+      }
       store.set('lessons', { ...lessonsState, targetLang: lang, completed: [], currentDay: 1 });
       if (window.__KIVU__?.toast) {
-        window.__KIVU__.toast(`Vous apprenez maintenant ${LANG_LABELS[lang].name}`, { type: 'success' });
+        window.__KIVU__.toast(`Tu apprends maintenant ${LANG_LABELS[lang].name}`, { type: 'success' });
       }
       rerender();
     })
