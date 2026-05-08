@@ -9,6 +9,13 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 
+# Auto-load .env file (for local dev) — silently ignored if dotenv missing or .env absent
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from config import Config
 from database import db
 from auth import jwt_required_optional
