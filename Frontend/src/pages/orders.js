@@ -243,7 +243,10 @@ function renderDetailModal() {
           <div class="order-detail__line"><span>Sous-total</span><span>${fmtPrice(order.subtotal, order.currency)}</span></div>
           <div class="order-detail__line"><span>Livraison</span><span>${order.shipping === 0 ? '<span style="color:var(--success);">Offerte</span>' : fmtPrice(order.shipping, order.currency)}</span></div>
           <div class="order-detail__line order-detail__line--total"><span>Total</span><span>${fmtPrice(order.total, order.currency)}</span></div>
-          <div class="order-detail__line"><span>Paiement</span><span>${escapeHtml(order.paymentMethod)}</span></div>
+          <div class="order-detail__line"><span>Paiement</span><span style="font-size:0.82rem;">${escapeHtml(order.paymentMethod)}</span></div>
+          ${order.txId ? `
+            <div class="order-detail__line"><span>Transaction</span><span style="font-family:monospace; font-size:0.78rem; color:var(--kivu-primary);">${escapeHtml(order.txId)}</span></div>
+          ` : ''}
           ${order.status === 'shipped' ? `
             <div class="order-detail__line"><span>Suivi</span><span style="font-family:monospace; color:var(--kivu-primary);">${order.trackingId}</span></div>
           ` : ''}

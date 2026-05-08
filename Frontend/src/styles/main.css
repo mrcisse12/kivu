@@ -10337,6 +10337,471 @@ button:focus-visible,
 }
 
 /* ===========================================================
+   Payment modal — Mobile Money + Cards + International
+   =========================================================== */
+
+.pay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(20, 32, 58, 0);
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+  transition: background 0.28s ease, backdrop-filter 0.28s ease;
+}
+.pay-backdrop.is-open {
+  background: rgba(20, 32, 58, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.pay-modal {
+  width: 100%;
+  max-width: 460px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: var(--bg);
+  border-radius: 24px;
+  padding: 24px 22px 22px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.40);
+  position: relative;
+  transform: translateY(20px) scale(0.94);
+  opacity: 0;
+  transition: transform 0.32s cubic-bezier(.2,.8,.3,1.05), opacity 0.24s ease;
+}
+.pay-backdrop.is-open .pay-modal {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+.pay-modal__close,
+.pay-modal__back {
+  position: absolute;
+  top: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: all 0.16s ease;
+}
+.pay-modal__close { right: 14px; }
+.pay-modal__back  { left: 14px; }
+.pay-modal__close:hover, .pay-modal__back:hover {
+  background: var(--bg);
+  color: var(--text-primary);
+  transform: scale(1.06);
+}
+
+.pay-modal__head {
+  text-align: center;
+  margin-bottom: 16px;
+  padding-top: 4px;
+}
+.pay-modal__amount {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.8rem;
+  background: linear-gradient(135deg, var(--kivu-primary), var(--kivu-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 4px;
+}
+.pay-modal__desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Demo mode pill */
+.pay-demo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 215, 0, 0.12);
+  color: #B07700;
+  border: 1px dashed rgba(255, 184, 89, 0.5);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin: 0 auto 16px;
+  width: fit-content;
+}
+
+/* Method groups */
+.pay-group {
+  margin-bottom: 16px;
+}
+.pay-group__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+/* Method picker rows */
+.pay-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pay-method {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: 14px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 0.16s ease;
+}
+.pay-method:hover {
+  border-color: var(--m-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+}
+.pay-method:active {
+  transform: scale(0.98);
+}
+.pay-method__logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.pay-method__logo--lg {
+  width: 64px;
+  height: 64px;
+  font-size: 32px;
+  border-radius: 18px;
+}
+.pay-method__body {
+  flex: 1;
+  min-width: 0;
+}
+.pay-method__countries {
+  display: flex;
+  gap: 3px;
+  margin-top: 4px;
+  font-size: 14px;
+}
+.pay-method__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.pay-method__chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+.pay-method__chip--popular {
+  background: rgba(255, 150, 0, 0.15);
+  color: var(--kivu-accent);
+}
+.pay-method__chip--instant {
+  background: rgba(45, 158, 115, 0.15);
+  color: var(--success);
+}
+
+/* Amount row */
+.pay-amount-row {
+  background: linear-gradient(135deg, var(--surface), rgba(28, 176, 246, 0.05));
+  border: 1px solid var(--divider);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+/* Phone input with prefix */
+.pay-form-group {
+  margin-bottom: 14px;
+}
+.pay-phone-input {
+  display: flex;
+  background: var(--surface);
+  border: 2px solid var(--divider);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.16s ease;
+}
+.pay-phone-input:focus-within { border-color: var(--kivu-primary); }
+.pay-phone-input__prefix {
+  padding: 12px 14px;
+  background: var(--bg);
+  border-right: 1px solid var(--divider);
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.pay-phone-input__field {
+  flex: 1;
+  padding: 12px 14px;
+  background: transparent;
+  border: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  outline: none;
+  letter-spacing: 0.6px;
+}
+
+/* Card visual mockup */
+.pay-card-mockup {
+  background: linear-gradient(135deg, #1a1f36 0%, #2d3550 100%);
+  color: white;
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 16px;
+  position: relative;
+  box-shadow: 0 8px 24px rgba(26, 31, 54, 0.30);
+  font-family: ui-monospace, monospace;
+}
+.pay-card-mockup::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 80% -20%, rgba(255, 255, 255, 0.15), transparent 60%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.pay-card-mockup__brand {
+  font-weight: 900;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  margin-bottom: 24px;
+}
+.pay-card-mockup__num {
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+}
+.pay-card-mockup__row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.92rem;
+}
+.pay-card-mockup__lbl {
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  opacity: 0.6;
+  margin-bottom: 2px;
+}
+
+/* Crypto grid */
+.pay-crypto-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+}
+.pay-crypto-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 8px;
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+.pay-crypto-card:hover {
+  border-color: var(--kivu-accent);
+  transform: translateY(-2px);
+}
+.pay-crypto-card__emoji {
+  font-size: 28px;
+  line-height: 1;
+}
+
+/* CTA buttons */
+.pay-modal__cta {
+  margin-top: 8px;
+  font-size: 1.05rem;
+  padding: 14px;
+  font-weight: 800;
+  border-radius: 14px;
+  width: 100%;
+  cursor: pointer;
+  border: 2px solid;
+  transition: all 0.16s ease;
+}
+.pay-modal__cta:hover:not(.is-disabled):not([disabled]) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.16);
+}
+.pay-modal__cta.is-disabled,
+.pay-modal__cta:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pay-secure-row {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  margin-top: 14px;
+  line-height: 1.5;
+}
+.pay-info-card {
+  background: rgba(28, 176, 246, 0.06);
+  border: 1px solid rgba(28, 176, 246, 0.20);
+  color: var(--text-primary);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+/* Processing screen */
+.pay-processing {
+  text-align: center;
+  padding: 24px 0;
+}
+.pay-processing__spinner {
+  width: 64px;
+  height: 64px;
+  border: 4px solid var(--divider);
+  border-top-color: var(--sp-color, var(--kivu-primary));
+  border-radius: 50%;
+  margin: 0 auto;
+  animation: pay-spin 0.8s linear infinite;
+}
+@keyframes pay-spin {
+  to { transform: rotate(360deg); }
+}
+.pay-processing__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  max-width: 280px;
+  margin: 24px auto 0;
+}
+.pay-processing__step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  animation: pay-step-in 0.5s ease both;
+  animation-fill-mode: both;
+}
+@keyframes pay-step-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.pay-processing__step-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--success);
+  border-radius: 999px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 0 rgba(45, 158, 115, 0.5);
+  animation: pay-dot-pulse 1.4s ease-in-out infinite;
+}
+@keyframes pay-dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(45, 158, 115, 0.5); }
+  50%      { box-shadow: 0 0 0 6px rgba(45, 158, 115, 0); }
+}
+
+/* Success screen */
+.pay-success {
+  text-align: center;
+  padding: 8px 0;
+}
+.pay-success__check {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+}
+.pay-success__check svg {
+  width: 100%;
+  height: 100%;
+}
+.pay-success__circle {
+  stroke-dasharray: 176;
+  stroke-dashoffset: 176;
+  animation: pay-circle 0.6s ease-out forwards;
+}
+.pay-success__tick {
+  stroke-dasharray: 50;
+  stroke-dashoffset: 50;
+  animation: pay-tick 0.4s 0.5s ease-out forwards;
+}
+@keyframes pay-circle {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes pay-tick {
+  to { stroke-dashoffset: 0; }
+}
+
+.pay-receipt {
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: 14px;
+  padding: 14px;
+  margin: 18px 0;
+  text-align: left;
+}
+.pay-receipt__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--divider);
+}
+.pay-receipt__row:last-child { border-bottom: 0; }
+
+.form-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+@media (max-width: 480px) {
+  .pay-modal { padding: 22px 18px 18px; }
+  .pay-method__countries { display: none; }
+  .pay-method__chip--popular { display: none; }
+  .pay-modal__amount { font-size: 1.5rem; }
+  .pay-crypto-grid { grid-template-columns: 1fr; }
+}
+
+/* ===========================================================
    Marketplace KIVU
    =========================================================== */
 

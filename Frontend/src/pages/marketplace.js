@@ -28,6 +28,7 @@ import { openConversation, sendUserMessage, getConversation, listConversations a
 import { createOrder } from '../services/marketplace-orders.js';
 import { speech } from '../services/speech.js';
 import { navigate } from '../router.js';
+import { openPaymentModal } from '../components/payment-modal.js';
 
 let activeCategory = 'all';
 let query = '';
@@ -760,30 +761,42 @@ renderMarketplace.mount = () => {
     })
   );
 
-  // Checkout — creates a real order with status timeline
+  // Checkout — opens the premium payment modal, creates the order
+  // with the actual payment method used
   document.querySelectorAll('[data-action="mp-checkout"]').forEach(btn =>
     btn.addEventListener('click', async () => {
       const total = cartTotal();
       const count = cartCount();
-      const ok = await confirmModal({
-        icon: '💳',
-        title: 'Confirmer la commande ?',
-        message: `${count} article${count > 1 ? 's' : ''} · ${total.toLocaleString('fr-FR')} FCFA. Paiement sécurisé KIVU Pay.`,
-        confirmLabel: 'Commander',
-        cancelLabel: 'Annuler'
+      cartOpen = false;
+      rerender();
+      const result = await openPaymentModal({
+        amount: total,
+        currency: 'FCFA',
+        description: `${count} article${count > 1 ? 's' : ''} · livraison incluse`
       });
-      if (!ok) return;
-      const order = createOrder(getCart().items, 'KIVU Pay');
+      if (!result || !result.success) return;
+      // Create the order with the real payment method label
+      const paymentLabel = result.maskedDisplay
+        ? `${result.methodLabel} · ${result.maskedDisplay}`
+        : result.methodLabel;
+      const order = createOrder(getCart().items, paymentLabel);
       if (!order) return;
-      fx.success();
+      // Persist the txId on the order for the receipt
+      try {
+        const orders = store.get('marketplaceOrders') || { list: [] };
+        const o = orders.list.find(x => x.id === order.id);
+        if (o) {
+          o.txId = result.txId;
+          store.set('marketplaceOrders', orders);
+        }
+      } catch {}
       if (window.__KIVU__?.toast) {
         window.__KIVU__.toast(`🎉 Commande ${order.id} confirmée !`, { type: 'success', duration: 3500 });
       }
       clearCart();
-      cartOpen = false;
       rerender();
-      // Navigate to orders page after a moment so user sees the timeline
-      setTimeout(() => navigate('/orders'), 1200);
+      // Navigate to orders page so user sees the timeline live
+      setTimeout(() => navigate('/orders'), 600);
     })
   );
 
