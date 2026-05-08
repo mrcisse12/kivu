@@ -20,6 +20,7 @@ import { PALETTES, DENSITIES, applyPalette, applyDensity, applyContrast } from '
 import { sync } from '../services/sync.js';
 import { confirmModal } from '../services/dialog.js';
 import { resetTutorial, startTutorial } from '../components/tutorial.js';
+import { promptInstall } from '../components/install-banner.js';
 import { navigate } from '../router.js';
 
 function sections() {
@@ -365,6 +366,12 @@ function renderAccount() {
       <div class="text-xs text-muted mt-xs" style="text-align:center;">
         Vos progrès se synchronisent automatiquement entre vos appareils.
       </div>
+    </div>
+
+    <div class="card mb-md">
+      <button class="btn btn-ghost btn-full" data-action="install-pwa">
+        📲 Installer KIVU sur cet appareil
+      </button>
     </div>
 
     <div class="card mb-md">
@@ -760,6 +767,10 @@ renderSettings.mount = () => {
       const u = store.get('user');
       store.set('user', { ...u, [input.dataset.field]: input.value });
     })
+  );
+
+  document.querySelectorAll('[data-action="install-pwa"]').forEach(btn =>
+    btn.addEventListener('click', () => promptInstall())
   );
 
   document.querySelectorAll('[data-action="replay-tutorial"]').forEach(btn =>

@@ -4,10 +4,12 @@
  * pour fonctionner en brousse, sans réseau.
  */
 
-const CACHE_VERSION = 'kivu-v1.0.0';
+const CACHE_VERSION = 'kivu-v1.2.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const API_CACHE = `${CACHE_VERSION}-api`;
+const API_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24h
+const RUNTIME_MAX_ENTRIES = 200;
 
 // Ressources critiques pré-cachées — l'app fonctionne 100% offline dès le 1er chargement
 const STATIC_ASSETS = [
@@ -98,16 +100,39 @@ async function networkFirstAPI(request) {
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(API_CACHE);
-      cache.put(request, response.clone());
+      // Add timestamp header so we can expire stale entries
+      const respClone = response.clone();
+      const body = await respClone.blob();
+      const headers = new Headers(respClone.headers);
+      headers.set('x-kivu-cached-at', Date.now().toString());
+      cache.put(request, new Response(body, {
+        status: respClone.status,
+        statusText: respClone.statusText,
+        headers
+      }));
     }
     return response;
   } catch {
     const cached = await caches.match(request);
-    if (cached) return cached;
+    if (cached) {
+      // Check expiration (don't serve stale API data forever)
+      const cachedAt = Number(cached.headers.get('x-kivu-cached-at') || 0);
+      const isFresh = (Date.now() - cachedAt) < API_MAX_AGE_MS;
+      if (isFresh) return cached;
+    }
     return new Response(
-      JSON.stringify({ offline: true, message: 'Mode hors-ligne — action en file' }),
-      { headers: { 'Content-Type': 'application/json' }, status: 200 }
+      JSON.stringify({ offline: true, message: 'Mode hors-ligne — action en file d\'attente' }),
+      { headers: { 'Content-Type': 'application/json' }, status: 503 }
     );
+  }
+}
+
+/** Limit a cache to N entries (drops oldest by access order) */
+async function trimCache(cacheName, maxEntries) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  if (keys.length > maxEntries) {
+    await Promise.all(keys.slice(0, keys.length - maxEntries).map(k => cache.delete(k)));
   }
 }
 
@@ -129,7 +154,11 @@ async function staleWhileRevalidate(request) {
   const cached = await cache.match(request);
   const fetchPromise = fetch(request)
     .then((response) => {
-      if (response.ok) cache.put(request, response.clone());
+      if (response.ok) {
+        cache.put(request, response.clone());
+        // Trim cache periodically (don't await, fire-and-forget)
+        trimCache(RUNTIME_CACHE, RUNTIME_MAX_ENTRIES).catch(() => {});
+      }
       return response;
     })
     .catch(() => cached);
