@@ -10802,6 +10802,162 @@ button:focus-visible,
 }
 
 /* ===========================================================
+   Home v2 — Continue card + Trending sections
+   =========================================================== */
+
+/* Continue learning card */
+.continue-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  border: 1px solid;
+  transition: transform 0.18s var(--ease-spring), box-shadow 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+.continue-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.continue-card__top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.continue-card__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.16);
+}
+.continue-card__body { flex: 1; min-width: 0; }
+.continue-card__label {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+.continue-card__title {
+  font-size: 1.1rem;
+  margin-bottom: 2px;
+  color: var(--text-primary);
+}
+.continue-card__arrow {
+  font-size: 18px;
+  color: var(--text-tertiary);
+  transition: transform 0.18s ease;
+  flex-shrink: 0;
+}
+.continue-card:hover .continue-card__arrow {
+  transform: translateX(4px);
+  color: var(--text-primary);
+}
+.continue-card__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.continue-card__progress-bar {
+  height: 6px;
+  background: rgba(0,0,0,0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.continue-card__progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(.2,.8,.3,1);
+}
+
+/* Trending cards (marketplace + stories) */
+.trend-card {
+  display: flex;
+  flex-direction: column;
+  width: 180px;
+  flex-shrink: 0;
+  background: var(--bg);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.18s var(--ease-spring), box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.trend-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--kivu-primary);
+  box-shadow: var(--shadow-md);
+}
+.trend-card__cover {
+  position: relative;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56px;
+}
+.trend-card__emoji {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.18));
+}
+.trend-card__country {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: rgba(255,255,255,0.92);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.trend-card__body {
+  padding: 10px 12px 12px;
+}
+.trend-card__title {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.trend-card__price {
+  margin-top: 6px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--kivu-accent);
+  font-size: 0.95rem;
+}
+.trend-card__chips {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .trend-card { width: 160px; }
+  .trend-card__cover { height: 90px; font-size: 44px; }
+  .continue-card__icon { width: 48px; height: 48px; font-size: 24px; }
+  .continue-card__title { font-size: 0.95rem; }
+}
+
+/* ===========================================================
    Marketplace KIVU
    =========================================================== */
 

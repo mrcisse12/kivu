@@ -6,6 +6,9 @@ import { mascot } from '../components/mascot.js';
 import { speech } from '../services/speech.js';
 import { upcomingEvents, todayEvents, daysUntil } from '../data/events.js';
 import { getFriends, getActivityFeed } from '../services/friends.js';
+import { PRODUCTS } from '../data/marketplace.js';
+import { STORIES } from '../data/stories.js';
+import { buildCurriculum, LANG_LABELS } from '../data/lessons.js';
 import { t } from '../i18n/index.js';
 
 // Tuiles fonctionnalités — emojis catégorie autorisés (gamification visuelle)
@@ -91,6 +94,9 @@ export function renderHome() {
     <!-- Daily goal -->
     ${renderDailyGoal(user)}
 
+    <!-- Continue learning (only if user has progress) -->
+    ${renderContinueCard()}
+
     <!-- Action principale -->
     <button class="card featured-action mb-md" data-nav="/translate">
       <span class="featured-action__icon">${icons.mic(28, 'white')}</span>
@@ -154,6 +160,12 @@ export function renderHome() {
 
     <!-- Mot du jour -->
     ${renderWordOfDay()}
+
+    <!-- Trending: Marketplace -->
+    ${renderMarketplacePreview()}
+
+    <!-- Trending: Stories -->
+    ${renderStoriesPreview()}
 
     <!-- Événements culturels africains -->
     ${renderEventsTeaser()}
@@ -298,6 +310,125 @@ function renderWordOfDay() {
     </div>
   `;
 }
+
+/* ─── New v2 sections ──────────────────────────────────── */
+
+function renderContinueCard() {
+  const lessons = store.get('lessons') || {};
+  const completedCount = (lessons.completed || []).length;
+  const targetLang = lessons.targetLang || 'swa';
+  const langInfo = LANG_LABELS[targetLang];
+  if (!langInfo) return '';
+  const currentDay = lessons.currentDay || 1;
+
+  // Show only if user has at least 1 completed lesson (otherwise the
+  // featured-action below is enough)
+  if (completedCount < 1) return '';
+
+  // Build curriculum to find the current lesson
+  const curriculum = buildCurriculum(targetLang);
+  const currentLesson = curriculum.find(l => l.day === currentDay) || curriculum[0];
+  if (!currentLesson) return '';
+
+  // Progress: completed / 30
+  const progressPct = Math.min(100, Math.round((completedCount / 30) * 100));
+
+  return `
+    <button class="card continue-card mb-md" data-nav="/lesson/${currentDay}"
+            style="background: linear-gradient(135deg, ${langInfo.color}15, ${langInfo.color}05); border-color: ${langInfo.color}40;">
+      <div class="continue-card__top">
+        <div class="continue-card__icon" style="background: ${langInfo.color};">
+          ${langInfo.flag}
+        </div>
+        <div class="continue-card__body">
+          <div class="text-xs continue-card__label">Reprendre où tu t'étais arrêté</div>
+          <div class="font-display font-bold continue-card__title">Leçon ${currentDay} · ${escapeHtml(langInfo.name)}</div>
+          <div class="text-xs text-muted">${escapeHtml(currentLesson.unit || '')}</div>
+        </div>
+        <span class="continue-card__arrow">▶</span>
+      </div>
+      <div class="continue-card__progress">
+        <div class="continue-card__progress-bar">
+          <div class="continue-card__progress-fill" style="width:${progressPct}%; background: ${langInfo.color};"></div>
+        </div>
+        <div class="text-xs text-muted">${completedCount} / 30 leçons · ${progressPct}%</div>
+      </div>
+    </button>
+  `;
+}
+
+function renderMarketplacePreview() {
+  // Pick 3 products with high ratings
+  const top = [...PRODUCTS]
+    .filter(p => p.rating >= 4.7)
+    .sort((a, b) => b.sold - a.sold)
+    .slice(0, 6);
+  if (top.length === 0) return '';
+  return `
+    <div class="section-head mb-sm">
+      <h2 class="font-display font-bold text-lg">🛍️ Marketplace tendance</h2>
+      <button class="link-btn text-xs" data-nav="/marketplace">Voir tout &rsaquo;</button>
+    </div>
+    <div class="scroll-x mb-lg">
+      <div class="scroll-x-row">
+        ${top.map(p => `
+          <button class="trend-card" data-nav="/marketplace" aria-label="${escapeAttr(p.name)}">
+            <div class="trend-card__cover" style="background: ${p.cover};">
+              <span class="trend-card__emoji">${p.emoji}</span>
+              <span class="trend-card__country">${p.countryFlag}</span>
+            </div>
+            <div class="trend-card__body">
+              <div class="trend-card__title">${escapeHtml(p.name)}</div>
+              <div class="text-xs text-muted">${escapeHtml(p.seller)}</div>
+              <div class="trend-card__price">${p.price.toLocaleString('fr-FR')} ${p.currency}</div>
+            </div>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderStoriesPreview() {
+  const completed = (store.get('stories') || {}).completed || [];
+  const completedSet = new Set(completed);
+  // Recommend stories not yet completed
+  const top = STORIES.filter(s => !completedSet.has(s.id)).slice(0, 6);
+  if (top.length === 0) return '';
+  return `
+    <div class="section-head mb-sm">
+      <h2 class="font-display font-bold text-lg">📖 Histoires recommandées</h2>
+      <button class="link-btn text-xs" data-nav="/stories">Voir tout &rsaquo;</button>
+    </div>
+    <div class="scroll-x mb-lg">
+      <div class="scroll-x-row">
+        ${top.map(s => `
+          <button class="trend-card trend-card--story" data-nav="/story/${s.id}" aria-label="${escapeAttr(s.title)}">
+            <div class="trend-card__cover" style="background: ${s.coverGradient};">
+              <span class="trend-card__emoji">${s.cover}</span>
+              <span class="trend-card__country">${s.flag}</span>
+            </div>
+            <div class="trend-card__body">
+              <div class="trend-card__title">${escapeHtml(s.title)}</div>
+              <div class="text-xs text-muted">${escapeHtml(s.unit || '')}</div>
+              <div class="trend-card__chips">
+                <span class="chip chip-ghost">${s.duration}</span>
+                <span class="chip chip-accent">+${s.xp} XP</span>
+              </div>
+            </div>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function escapeAttr(s) { return escapeHtml(s); }
 
 function renderEventsTeaser() {
   const today = todayEvents();
