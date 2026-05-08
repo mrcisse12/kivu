@@ -28,6 +28,7 @@ import {
   updateLastMessage,
   popLastMessage,
   sendToAssistant,
+  streamFromAssistant,
   WELCOME_EXAMPLES
 } from '../services/assistant.js';
 
@@ -356,40 +357,75 @@ async function send(text) {
   inputValue = '';
   fx.click();
 
-  // 1. Push user message only (no placeholder yet — typing bubble shows while waiting)
+  // 1. Push user message
   pushMessage({ role: 'user', content: trimmed });
 
   isStreaming = true;
   rerender(true);
 
   let reply = '';
+  let usedStreaming = false;
+
+  // Try streaming first (best UX — text appears word-by-word)
   try {
-    const result = await sendToAssistant();
-    reply = result.reply;
+    // Push empty assistant bubble immediately so streaming has a place to render
+    pushMessage({ role: 'assistant', content: '' });
+    rerender(true);
+
+    const result = await streamFromAssistant((chunk, full) => {
+      // Live update the last assistant message
+      updateLastMessage(full);
+      // Re-render the bubble content efficiently
+      const stream = document.getElementById('assistant-stream');
+      if (stream) {
+        const last = stream.querySelector('.bubble-row--ai:last-of-type .bubble__content');
+        if (last) {
+          last.innerHTML = renderMarkdown(full);
+          stream.scrollTop = stream.scrollHeight;
+        }
+      }
+    });
+    reply = result.fullText;
     lastProvider = result.provider;
     lastModel = result.model;
+    usedStreaming = true;
   } catch (err) {
-    // Network failure → use the offline AI engine (rich knowledge base)
+    // Streaming failed — pop the empty assistant bubble and fall back
+    popLastMessage();
     if (isNetworkError(err)) {
       reply = offlineReply(trimmed);
       lastProvider = 'offline';
       lastModel = 'KIVU AI Engine';
     } else {
-      // Other errors (server-side) → show actual error
-      reply = `⚠️ Une erreur s'est produite : ${err?.message || err}.\n\nLe serveur IA a renvoyé une erreur. Réessaie dans quelques instants.`;
-      lastProvider = 'offline';
+      // Try non-streaming once more before falling back to offline
+      try {
+        const result = await sendToAssistant();
+        reply = result.reply;
+        lastProvider = result.provider;
+        lastModel = result.model;
+      } catch (err2) {
+        if (isNetworkError(err2)) {
+          reply = offlineReply(trimmed);
+          lastProvider = 'offline';
+          lastModel = 'KIVU AI Engine';
+        } else {
+          reply = `⚠️ Une erreur s'est produite : ${err2?.message || err2}.\n\nLe serveur IA a renvoyé une erreur. Réessaie dans quelques instants.`;
+          lastProvider = 'offline';
+        }
+      }
     }
   }
 
-  // 2. Now push the assistant message bubble (empty), hide typing dots, start typewriter
-  pushMessage({ role: 'assistant', content: '' });
-  // Re-render: typing dots disappear, new empty AI bubble appears
-  rerender(true);
-
-  // 3. Type out the reply (typewriter effect on the new bubble)
-  await typeReply(reply || 'Pas de réponse.');
+  if (!usedStreaming) {
+    // Push the empty bubble and run the typewriter for non-streaming responses
+    pushMessage({ role: 'assistant', content: '' });
+    rerender(true);
+    await typeReply(reply || 'Pas de réponse.');
+  } else {
+    // Streaming already filled the bubble — just persist and finalize
+    updateLastMessage(reply || 'Pas de réponse.');
+  }
   isStreaming = false;
-  // Final rerender to show the actions row + persisted state
   rerender(true);
 
   // TTS if enabled

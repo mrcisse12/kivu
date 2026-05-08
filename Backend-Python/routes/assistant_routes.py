@@ -7,9 +7,15 @@ Hiérarchie des fournisseurs :
 
 Chaque fournisseur reçoit le même prompt système enrichi avec le
 contexte de l'utilisateur (prénom, langue cible, niveau, série).
+
+Endpoints :
+  POST /chat        → réponse complète d'un coup (JSON)
+  POST /chat/stream → réponse en streaming (Server-Sent Events)
+  GET  /suggestions → 10 prompts d'exemple
 """
 import os
-from flask import Blueprint, request, jsonify
+import json
+from flask import Blueprint, request, jsonify, Response, stream_with_context
 from auth import jwt_required_optional
 
 assistant_bp = Blueprint("assistant", __name__)
@@ -204,6 +210,126 @@ def chat():
                  else OPENAI_MODEL if provider == "openai"
                  else "offline"
     })
+
+
+# ─── Streaming endpoint (Server-Sent Events) ─────────────────
+
+def _anthropic_stream(messages, system_msg):
+    """Yields text chunks from Anthropic streaming API."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return None
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        clean = [m for m in messages if m.get("role") in ("user", "assistant")]
+
+        def generator():
+            try:
+                with client.messages.stream(
+                    model=ANTHROPIC_MODEL,
+                    system=system_msg,
+                    messages=clean,
+                    temperature=0.7,
+                    max_tokens=4096,
+                ) as stream:
+                    for text in stream.text_stream:
+                        yield text
+            except Exception as e:
+                print(f"[KIVU Assistant] Anthropic stream error: {e}")
+                yield ""
+        return generator
+    except Exception as e:
+        print(f"[KIVU Assistant] Anthropic stream init error: {e}")
+        return None
+
+
+def _openai_stream(messages, system_msg):
+    """Yields text chunks from OpenAI streaming API."""
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    if not api_key:
+        return None
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+
+        def generator():
+            try:
+                resp = client.chat.completions.create(
+                    model=OPENAI_MODEL,
+                    messages=[{"role": "system", "content": system_msg}, *messages],
+                    temperature=0.7,
+                    max_tokens=4096,
+                    stream=True,
+                )
+                for chunk in resp:
+                    delta = chunk.choices[0].delta.content if chunk.choices else None
+                    if delta:
+                        yield delta
+            except Exception as e:
+                print(f"[KIVU Assistant] OpenAI stream error: {e}")
+                yield ""
+        return generator
+    except Exception as e:
+        print(f"[KIVU Assistant] OpenAI stream init error: {e}")
+        return None
+
+
+@assistant_bp.post("/chat/stream")
+@jwt_required_optional
+def chat_stream():
+    """Streams the reply via Server-Sent Events.
+
+    Output format (each line):
+      data: {"chunk": "Hello"}\n\n
+      data: {"chunk": " world"}\n\n
+      data: {"done": true, "provider": "anthropic", "model": "..."}\n\n
+    """
+    data = request.get_json(silent=True) or {}
+    messages = data.get("messages", []) or []
+    target = data.get("targetLanguage", "fra")
+    user_context = data.get("userContext", {}) or {}
+
+    if len(messages) > 20:
+        messages = messages[-20:]
+
+    system_msg = build_system_prompt(user_context, target)
+
+    # Pick the best available provider
+    gen_factory = _anthropic_stream(messages, system_msg)
+    provider = "anthropic" if gen_factory else None
+    if not gen_factory:
+        gen_factory = _openai_stream(messages, system_msg)
+        if gen_factory:
+            provider = "openai"
+
+    def stream_response():
+        if gen_factory:
+            try:
+                for chunk in gen_factory():
+                    if chunk:
+                        yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+                used_model = ANTHROPIC_MODEL if provider == "anthropic" else OPENAI_MODEL
+                yield f"data: {json.dumps({'done': True, 'provider': provider, 'model': used_model})}\n\n"
+            except Exception as e:
+                err_msg = str(e)
+                yield f"data: {json.dumps({'error': err_msg, 'provider': provider})}\n\n"
+        else:
+            # No streaming provider available — emit offline reply as a single chunk
+            last = messages[-1].get("content", "") if messages else ""
+            reply = _offline_reply(last)
+            yield f"data: {json.dumps({'chunk': reply})}\n\n"
+            yield f"data: {json.dumps({'done': True, 'provider': 'offline', 'model': 'offline'})}\n\n"
+
+    return Response(
+        stream_with_context(stream_response()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # disable nginx buffering for true streaming
+            "Connection": "keep-alive",
+        }
+    )
 
 
 # ─── Endpoint suggestions ────────────────────────────────────

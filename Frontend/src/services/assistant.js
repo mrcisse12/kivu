@@ -169,7 +169,7 @@ export async function sendToAssistant() {
     .slice(-20);
 
   const userContext = buildUserContext();
-  const targetLanguage = userContext.motherTongue ? 'fra' : 'fra'; // always FR for now
+  const targetLanguage = userContext.motherTongue ? 'fra' : 'fra';
 
   const res = await api.post('/assistant/chat', {
     messages,
@@ -182,6 +182,79 @@ export async function sendToAssistant() {
     provider: res.provider || 'unknown',
     model: res.model || ''
   };
+}
+
+/**
+ * Send the conversation with STREAMING — onChunk fires for each
+ * piece of text as it arrives. Returns { provider, model } when done.
+ *
+ * @param {(chunk: string, fullText: string) => void} onChunk
+ * @returns {Promise<{ provider: string, model: string, fullText: string }>}
+ */
+export async function streamFromAssistant(onChunk) {
+  const active = getActiveConversation();
+  if (!active) throw new Error('No active conversation');
+
+  const messages = (active.messages || [])
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .map(m => ({ role: m.role, content: m.content }))
+    .slice(-20);
+
+  const userContext = buildUserContext();
+  const targetLanguage = 'fra';
+
+  const ctrl = new AbortController();
+  const url = api.baseUrl + '/assistant/chat/stream';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages, targetLanguage, userContext }),
+    signal: ctrl.signal
+  });
+
+  if (!res.ok || !res.body) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let fullText = '';
+  let provider = 'unknown';
+  let model = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    // Parse SSE events line by line
+    const lines = buffer.split('\n\n');
+    buffer = lines.pop() || ''; // keep incomplete event for next iteration
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data:')) continue;
+      const json = trimmed.slice(5).trim();
+      if (!json) continue;
+      try {
+        const evt = JSON.parse(json);
+        if (evt.chunk) {
+          fullText += evt.chunk;
+          onChunk?.(evt.chunk, fullText);
+        }
+        if (evt.done) {
+          provider = evt.provider || provider;
+          model = evt.model || model;
+        }
+        if (evt.error) {
+          throw new Error(evt.error);
+        }
+      } catch (e) {
+        // Ignore malformed lines
+      }
+    }
+  }
+
+  return { provider, model, fullText };
 }
 
 /** Welcome examples shown when conversation is empty */
