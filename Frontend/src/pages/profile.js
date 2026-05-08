@@ -29,6 +29,7 @@ const LANG_INFO = {
 
 const MENU = [
   { label: 'Mes statistiques',         icon: icons.signal,        color: 'var(--kivu-primary)',   path: '/stats' },
+  { label: 'Mes commandes',            icon: icons.archive,       color: 'var(--kivu-secondary)', path: '/orders' },
   { label: 'Classement complet',       icon: icons.trophy,        color: 'var(--kivu-accent)',    path: '/leaderboard' },
   { label: 'Mes amis',                 icon: icons.users,         color: '#FF6B9D',               path: '/friends' },
   { label: 'Paramètres',               icon: icons.settings,      color: 'var(--kivu-primary)',   path: '/settings' },

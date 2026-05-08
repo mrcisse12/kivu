@@ -28,6 +28,8 @@ import { renderVoices } from './pages/voices.js';
 import { renderLeaderboard } from './pages/leaderboard.js';
 import { renderStats } from './pages/stats.js';
 import { renderMarketplace } from './pages/marketplace.js';
+import { renderOrders } from './pages/orders.js';
+import { reinitOrderProgressions } from './services/marketplace-orders.js';
 import { setupInstallBanner } from './components/install-banner.js';
 import { setupMascotTracker } from './components/mascot-tracker.js';
 import { setupNotificationsBell } from './components/notifications-panel.js';
@@ -62,6 +64,7 @@ const routes = {
   '/leaderboard': renderLeaderboard,
   '/stats': renderStats,
   '/marketplace': renderMarketplace,
+  '/orders': renderOrders,
   '/login': renderLogin,
   '/onboarding': renderOnboarding
 };
@@ -180,6 +183,9 @@ setupNotificationsBell();
 
 // Ensure the user has a stable KIVU code (KIVU-XXX-NNNN)
 ensureUserCode();
+
+// Re-arm pending order status transitions (in case user reloads mid-progression)
+reinitOrderProgressions();
 
 // First-launch interactive tutorial — only on home, only if onboarding done
 function maybeStartTutorial() {
