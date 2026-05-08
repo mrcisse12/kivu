@@ -32,6 +32,7 @@ import { renderOrders } from './pages/orders.js';
 import { reinitOrderProgressions } from './services/marketplace-orders.js';
 import { setupInstallBanner } from './components/install-banner.js';
 import { setupOfflineIndicator } from './components/offline-indicator.js';
+import { setupGlobalSearch } from './components/global-search.js';
 import { setupMascotTracker } from './components/mascot-tracker.js';
 import { setupNotificationsBell } from './components/notifications-panel.js';
 import { seedWelcomeNotifications, notifications } from './services/notifications.js';
@@ -201,6 +202,7 @@ if ('serviceWorker' in navigator) {
 // Custom PWA install banner with Kivi mascot
 setupInstallBanner();
 setupOfflineIndicator();
+setupGlobalSearch();
 
 // Mascot eye-tracking (Kivi suit le curseur + cligne aléatoirement)
 setupMascotTracker();
