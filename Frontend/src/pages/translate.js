@@ -142,7 +142,7 @@ export function renderTranslate() {
         <div class="flex gap-xs mt-md flex-wrap">
           <span class="chip chip-success">Confiance ${Math.round((translation.confidence || 0) * 100)}%</span>
           <span class="chip ${translation.offline ? 'chip-primary' : 'chip-accent'}">
-            ${translation.offline ? 'Hors-ligne' : 'En ligne'}
+            ${providerLabel(translation.provider, translation.offline)}
           </span>
           <span class="chip chip-ghost">${translation.durationMs ?? '<1'} ms</span>
         </div>
@@ -471,6 +471,18 @@ function formatRelativeTime(iso) {
   const d = Math.round(h / 24);
   if (d < 7) return `il y a ${d} j`;
   return new Date(iso).toLocaleDateString('fr-FR');
+}
+
+function providerLabel(provider, offline) {
+  const map = {
+    anthropic:     '✨ Claude Sonnet 4.5',
+    openai:        '🤖 GPT-4o',
+    libretranslate:'🌐 LibreTranslate',
+    dictionary:    '📚 Dictionnaire local',
+    noop:          '🔁 Identique',
+  };
+  if (provider && map[provider]) return map[provider];
+  return offline ? 'Hors-ligne' : 'En ligne';
 }
 
 function escapeHtml(s) {

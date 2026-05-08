@@ -18,6 +18,7 @@ import { fx } from '../services/audio-fx.js';
 import { renderMarkdown, stripMarkdown } from '../services/markdown.js';
 import { offlineReply, isNetworkError } from '../services/offline-ai.js';
 import { confirmModal } from '../services/dialog.js';
+import { api } from '../services/api.js';
 import {
   listConversations,
   getActiveConversation,
@@ -64,11 +65,21 @@ function relTime(iso) {
 function providerBadge() {
   if (!lastProvider) return '';
   const labels = {
-    anthropic: { name: 'Claude Sonnet 4.5', color: '#D97757', icon: '✨' },
-    openai:    { name: 'GPT-4o',            color: '#10A37F', icon: '🤖' },
-    offline:   { name: 'Mode hors-ligne',   color: '#999',    icon: '📴' }
+    anthropic: { name: 'Claude Sonnet 4.5', color: '#D97757', icon: '✨', online: true },
+    openai:    { name: 'GPT-4o',            color: '#10A37F', icon: '🤖', online: true },
+    offline:   { name: 'Mode hors-ligne',   color: '#999',    icon: '📴', online: false }
   };
   const meta = labels[lastProvider] || labels.offline;
+  // When in offline mode, the badge becomes a button that re-tests connection
+  if (!meta.online) {
+    return `
+      <button class="ai-provider-badge ai-provider-badge--retry" data-action="retry-online"
+              style="--provider-color: ${meta.color};" title="Réessayer la connexion">
+        ${meta.icon} ${meta.name}
+        <span class="ai-provider-badge__retry">↻</span>
+      </button>
+    `;
+  }
   return `
     <span class="ai-provider-badge" style="--provider-color: ${meta.color};">
       ${meta.icon} ${meta.name}
@@ -501,6 +512,42 @@ renderAssistant.mount = () => {
     btn.addEventListener('click', () => {
       drawerOpen = !drawerOpen;
       fx.click();
+      rerender();
+    })
+  );
+
+  // Retry online mode (when stuck in "Mode hors-ligne")
+  document.querySelectorAll('[data-action="retry-online"]').forEach(btn =>
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      btn.classList.add('is-checking');
+      const span = btn.querySelector('.ai-provider-badge__retry');
+      if (span) span.textContent = '⟳';
+      try {
+        // Probe the backend health endpoint
+        const ctrl = new AbortController();
+        const timeoutId = setTimeout(() => ctrl.abort(), 4000);
+        const res = await fetch(api.baseUrl + '/health', {
+          signal: ctrl.signal
+        }).catch(() => null);
+        clearTimeout(timeoutId);
+        if (res && res.ok) {
+          // Backend is reachable! Reset state and let next message use it
+          lastProvider = '';
+          fx.success();
+          if (window.__KIVU__?.toast) {
+            window.__KIVU__.toast('🌐 Backend détecté ! Tape ton prochain message pour activer Claude/GPT-4o.', { type: 'success', duration: 4000 });
+          }
+        } else {
+          if (window.__KIVU__?.toast) {
+            window.__KIVU__.toast('Backend toujours injoignable. Vérifie qu\'il tourne sur localhost:5000.', { type: 'warning', duration: 4000 });
+          }
+        }
+      } catch {
+        if (window.__KIVU__?.toast) {
+          window.__KIVU__.toast('Impossible de joindre le backend.', { type: 'error' });
+        }
+      }
       rerender();
     })
   );

@@ -1,4 +1,5 @@
 """Routes traduction — temps réel + historique."""
+import os
 from flask import Blueprint, request, jsonify, g
 from database import db
 from models import Translation
@@ -6,6 +7,24 @@ from services.translation_service import translate
 from auth import jwt_required, jwt_required_optional
 
 translation_bp = Blueprint("translation", __name__)
+
+
+@translation_bp.get("/status")
+def translation_status():
+    """Returns which translation providers are available."""
+    return jsonify({
+        "providers": {
+            "anthropic": bool(os.environ.get("ANTHROPIC_API_KEY")),
+            "openai":    bool(os.environ.get("OPENAI_API_KEY")),
+            "libretranslate": True,  # public, always available (best-effort)
+            "dictionary": True,
+        },
+        "preferred": (
+            "anthropic" if os.environ.get("ANTHROPIC_API_KEY")
+            else "openai" if os.environ.get("OPENAI_API_KEY")
+            else "libretranslate"
+        )
+    })
 
 
 @translation_bp.post("/translate")

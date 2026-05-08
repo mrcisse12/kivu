@@ -11253,6 +11253,48 @@ html[data-route="/login"] .gs-fab {
   display: none;
 }
 
+/* ─── Provider badge retry button ──────────────────────── */
+.ai-provider-badge--retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--divider);
+  background: rgba(153, 153, 153, 0.10);
+  color: var(--provider-color, #999);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  font-family: inherit;
+}
+.ai-provider-badge--retry:hover {
+  background: rgba(153, 153, 153, 0.20);
+  border-color: var(--provider-color);
+  transform: translateY(-1px);
+}
+.ai-provider-badge--retry:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.ai-provider-badge--retry.is-checking .ai-provider-badge__retry {
+  animation: kivu-spin 1s linear infinite;
+  display: inline-block;
+}
+@keyframes kivu-spin {
+  to { transform: rotate(360deg); }
+}
+.ai-provider-badge__retry {
+  font-size: 0.85rem;
+  margin-left: 2px;
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+.ai-provider-badge--retry:hover .ai-provider-badge__retry {
+  transform: rotate(180deg);
+}
+
 /* ===========================================================
    Marketplace KIVU
    =========================================================== */
