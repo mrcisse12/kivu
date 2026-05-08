@@ -71,8 +71,12 @@ const routes = {
 
 const app = document.getElementById('app');
 
+// Track previous route to detect actual navigation vs in-page rerender
+let previousPath = null;
+
 function render() {
   const path = router.current();
+  const isRouteChange = previousPath !== null && previousPath !== path;
 
   // Onboarding first
   if (!store.get('onboardingCompleted') && path !== '/onboarding') {
@@ -84,6 +88,7 @@ function render() {
   if (path.startsWith('/lesson/')) {
     app.innerHTML = `<main class="screen lesson-screen">${renderLessonPlayer()}</main>`;
     if (renderLessonPlayer.mount) renderLessonPlayer.mount();
+    afterRender(path, isRouteChange);
     return;
   }
 
@@ -91,6 +96,7 @@ function render() {
   if (path.startsWith('/story/')) {
     app.innerHTML = `<main class="screen lesson-screen">${renderStoryPlayer()}</main>`;
     if (renderStoryPlayer.mount) renderStoryPlayer.mount();
+    afterRender(path, isRouteChange);
     return;
   }
 
@@ -101,6 +107,7 @@ function render() {
       <main class="screen animate-slide-up">${renderCheckout()}</main>
     `;
     if (renderCheckout.mount) renderCheckout.mount();
+    afterRender(path, isRouteChange);
     return;
   }
 
@@ -110,14 +117,33 @@ function render() {
   const navHTML = isFullScreen ? '' : renderBottomNav(path);
   const sideHTML = isFullScreen ? '' : renderDesktopNav(path);
 
+  // Animation class only on real route changes (not on internal store rerenders)
+  const screenClass = isRouteChange
+    ? 'screen animate-page-in'
+    : 'screen animate-slide-up';
+
   app.innerHTML = `
     ${sideHTML}
-    <main class="screen animate-slide-up">${screenHTML}</main>
+    <main class="${screenClass}">${screenHTML}</main>
     ${navHTML}
   `;
 
   // Run post-render hooks (for attaching Chart.js, listeners, etc.)
   if (renderFn.mount) renderFn.mount();
+
+  afterRender(path, isRouteChange);
+}
+
+/** Post-render housekeeping: scroll reset, page tracking */
+function afterRender(path, isRouteChange) {
+  if (isRouteChange) {
+    // Smooth-scroll to top of page on route change
+    window.scrollTo({ top: 0, behavior: 'instant' in window.scrollTo ? 'instant' : 'auto' });
+    // Also reset scroll on the .screen container if it has its own scroll
+    const main = document.querySelector('main.screen');
+    if (main) main.scrollTop = 0;
+  }
+  previousPath = path;
 }
 
 // Subscribe to router and global state changes

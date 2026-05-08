@@ -38,8 +38,8 @@ export function renderHome() {
       </div>
     </div>
 
-    <!-- Hero XP Card avec orbs décoratifs animés -->
-    <div class="hero-card grad-hero mb-md animate-scale-in" style="position:relative; overflow:hidden;">
+    <!-- Hero XP Card avec orbs décoratifs animés + sheen sweep -->
+    <div class="hero-card grad-hero mb-md animate-scale-in" style="position:relative;">
       <span class="orb orb--accent" style="width:160px; height:160px; top:-60px; right:-40px;"></span>
       <span class="orb orb--primary" style="width:120px; height:120px; bottom:-50px; left:-30px; animation-delay:-4s;"></span>
 
@@ -53,18 +53,18 @@ export function renderHome() {
         </div>
 
         <div class="flex gap-lg mb-md">
-          <div>
+          <button class="hero-stat" data-nav="/stats" aria-label="Voir mes XP">
             <div class="text-2xl font-bold" data-counter="${user.stats.xp}">${user.stats.xp.toLocaleString('fr-FR')}</div>
             <div class="text-xs hero-stat-label">${t('home.xp')}</div>
-          </div>
-          <div>
+          </button>
+          <button class="hero-stat" data-nav="/profile" aria-label="Voir mon niveau">
             <div class="text-2xl font-bold">${user.stats.level}</div>
             <div class="text-xs hero-stat-label">${t('home.level')}</div>
-          </div>
-          <div>
+          </button>
+          <button class="hero-stat" data-nav="/dictionary" aria-label="Voir mes mots">
             <div class="text-2xl font-bold" data-counter="${user.stats.wordsLearned}">${user.stats.wordsLearned}</div>
             <div class="text-xs hero-stat-label">${t('home.words')}</div>
-          </div>
+          </button>
         </div>
 
         <div class="progress-bar mb-xs" style="background:rgba(255,255,255,0.22);">

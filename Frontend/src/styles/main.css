@@ -9795,6 +9795,279 @@ html[dir="rtl"] .onb-question {
 }
 
 /* ===========================================================
+   POLISH FINAL — page transitions, skeleton loaders,
+   premium hover states, micro-interactions
+   =========================================================== */
+
+/* Page transition (slide-up + fade on real route change) */
+.animate-page-in {
+  animation: kivu-page-in 0.42s cubic-bezier(.22,.61,.36,1) both;
+}
+@keyframes kivu-page-in {
+  0%   { opacity: 0; transform: translateY(14px); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-in { animation: none; }
+}
+
+/* Skeleton loaders — shimmer */
+.kivu-skel {
+  background: linear-gradient(
+    90deg,
+    var(--divider) 0%,
+    var(--surface) 50%,
+    var(--divider) 100%
+  );
+  background-size: 200% 100%;
+  animation: kivu-shimmer 1.6s ease-in-out infinite;
+  border-radius: 4px;
+  display: block;
+}
+@keyframes kivu-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.kivu-skel-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+.kivu-skel-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-lg);
+}
+.kivu-skel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+.kivu-skel-stat {
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Premium hover states — subtle depth on interactive cards */
+.feature-tile,
+.card,
+.dict-tile,
+.story-card,
+.event-row,
+.kpi-card,
+.voice-card,
+.dict-cat-card,
+.lb-row {
+  will-change: transform;
+}
+/* Smoother hover with micro-lift + slightly stronger shadow */
+.feature-tile:not(:disabled):hover,
+.story-card:not(:disabled):hover {
+  transform: translateY(-3px) scale(1.005);
+  transition: transform 0.18s cubic-bezier(.2,.8,.3,1.05),
+              box-shadow 0.18s ease,
+              border-color 0.18s ease;
+}
+
+/* Click feedback — quick squish */
+button:not(:disabled):active,
+.card:not(:disabled):active,
+[data-nav]:active,
+[data-action]:active {
+  transition-duration: 0.08s;
+}
+
+/* Premium gradient borders on focus (a11y + visual) */
+.form-input:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--kivu-accent);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* Empty states — illustration + better spacing */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 24px;
+  text-align: center;
+  background: linear-gradient(180deg, var(--surface), transparent);
+  border-radius: var(--r-lg);
+  border: 1px dashed var(--divider);
+  animation: kivu-page-in 0.5s cubic-bezier(.22,.61,.36,1) both;
+}
+.empty-state__emoji {
+  font-size: 64px;
+  margin-bottom: 12px;
+  display: inline-block;
+  animation: kivu-empty-bounce 2.4s cubic-bezier(.5,0,.5,1) infinite;
+}
+@keyframes kivu-empty-bounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25%      { transform: translateY(-6px) rotate(-3deg); }
+  50%      { transform: translateY(0) rotate(0deg); }
+  75%      { transform: translateY(-3px) rotate(3deg); }
+}
+.empty-state__title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+/* Hero card — premium polish */
+.hero-card {
+  position: relative;
+  overflow: hidden;
+}
+.hero-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,0.08),
+    transparent
+  );
+  pointer-events: none;
+  animation: kivu-hero-sheen 6s ease-in-out infinite;
+}
+@keyframes kivu-hero-sheen {
+  0%, 100% { left: -100%; }
+  50%      { left: 200%; }
+}
+
+/* Stat values — slight count-up emphasis */
+.hero-card .text-2xl,
+.hero-card .text-xl {
+  letter-spacing: -0.02em;
+  font-feature-settings: "tnum" 1;  /* tabular numbers stay aligned */
+}
+
+/* Clickable hero stats (XP / Level / Words) — go to relevant pages */
+.hero-stat {
+  background: transparent;
+  border: 0;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+  border-radius: 8px;
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+.hero-stat:hover {
+  background: rgba(255,255,255,0.10);
+  transform: translateY(-1px);
+}
+.hero-stat:active {
+  transform: scale(0.96);
+}
+
+/* Toast container — improved positioning */
+.toast {
+  animation: kivu-toast-in 0.32s cubic-bezier(.2,.8,.3,1.1);
+}
+@keyframes kivu-toast-in {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.92); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Bottom-nav active item — bouncy scale */
+.bottom-nav-item.active .nav-icon {
+  animation: kivu-nav-pop 0.36s cubic-bezier(.36,0,.5,1.6) both;
+}
+@keyframes kivu-nav-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.18) translateY(-2px); }
+  100% { transform: scale(1.06) translateY(-1px); }
+}
+
+/* Mascot greeting card on home — subtle parallax */
+.mascot-greeting {
+  position: relative;
+  background: linear-gradient(135deg, rgba(28,176,246,0.06), rgba(255,150,0,0.04));
+  border-color: rgba(28,176,246,0.18);
+}
+
+/* Featured-action — refined micro-interaction */
+.featured-action {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.20s cubic-bezier(.2,.8,.3,1.05);
+}
+.featured-action::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(28,176,246,0.0), rgba(255,150,0,0.0));
+  pointer-events: none;
+  transition: background 0.25s ease;
+}
+.featured-action:hover {
+  transform: translateY(-2px);
+}
+.featured-action:hover::after {
+  background: linear-gradient(135deg, rgba(28,176,246,0.06), rgba(255,150,0,0.04));
+}
+.featured-action:hover .featured-action__arrow {
+  transform: translateX(4px);
+  transition: transform 0.20s ease;
+}
+
+/* Scroll indicator at the very top — slimmer */
+.scroll-indicator {
+  height: 2px;
+  background: linear-gradient(90deg, var(--kivu-primary), var(--kivu-accent));
+  width: var(--scroll, 0%);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  transition: width 0.06s linear;
+  box-shadow: 0 1px 8px rgba(255, 150, 0, 0.30);
+}
+
+/* Reduce-motion respect */
+@media (prefers-reduced-motion: reduce) {
+  .hero-card::after,
+  .empty-state__emoji,
+  .bottom-nav-item.active .nav-icon,
+  .toast,
+  .kivu-skel {
+    animation: none !important;
+  }
+  .feature-tile:hover,
+  .story-card:hover,
+  .featured-action:hover {
+    transform: none !important;
+  }
+}
+
+/* ===========================================================
    Marketplace KIVU
    =========================================================== */
 
